@@ -6,6 +6,16 @@
     mode: "0755"
   become: true
 
+- name: Copy problem bundle
+  ansible.builtin.copy:
+    src: "{{ problem.bundle_dir | regex_replace('/*$', '/') }}"
+    dest: /srv/portal/bundle/
+    mode: preserve
+  become: true
+  when: problem.bundle_dir != ''
+  notify:
+    - Restart portal service
+
 - name: Set portal compose.yaml
   ansible.builtin.template:
     src: compose.yaml.j2

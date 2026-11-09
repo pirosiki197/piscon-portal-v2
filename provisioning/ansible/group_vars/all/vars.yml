@@ -33,7 +33,7 @@ problem:
   bundle_dir: "{{ local.problem.bundle_dir | default('') }}"
   name: "{{ local.problem.name | default('') }}"
   instance_limit: "{{ local.problem.instance_limit }}"
-  image_id: "{{ local.problem.image_id }}"
+  image_id: "{{ local.problem.image_id | default('') }}"
   instance_type: "{{ local.problem.instance_type }}"
 
 aws:
