@@ -21,6 +21,7 @@ func Where[Q mysql.Filterable]() struct {
 	Benchmarks         benchmarkWhere[Q]
 	Documents          documentWhere[Q]
 	Instances          instanceWhere[Q]
+	Problems           problemWhere[Q]
 	Sessions           sessionWhere[Q]
 	TeamGithubAccounts teamGithubAccountWhere[Q]
 	Teams              teamWhere[Q]
@@ -31,6 +32,7 @@ func Where[Q mysql.Filterable]() struct {
 		Benchmarks         benchmarkWhere[Q]
 		Documents          documentWhere[Q]
 		Instances          instanceWhere[Q]
+		Problems           problemWhere[Q]
 		Sessions           sessionWhere[Q]
 		TeamGithubAccounts teamGithubAccountWhere[Q]
 		Teams              teamWhere[Q]
@@ -40,6 +42,7 @@ func Where[Q mysql.Filterable]() struct {
 		Benchmarks:         buildBenchmarkWhere[Q](Benchmarks.Columns),
 		Documents:          buildDocumentWhere[Q](Documents.Columns),
 		Instances:          buildInstanceWhere[Q](Instances.Columns),
+		Problems:           buildProblemWhere[Q](Problems.Columns),
 		Sessions:           buildSessionWhere[Q](Sessions.Columns),
 		TeamGithubAccounts: buildTeamGithubAccountWhere[Q](TeamGithubAccounts.Columns),
 		Teams:              buildTeamWhere[Q](Teams.Columns),

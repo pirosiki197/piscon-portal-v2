@@ -196,6 +196,44 @@ func (c *MockRepositoryCreateInstanceCall) DoAndReturn(f func(context.Context, d
 	return c
 }
 
+// CreateProblem mocks base method.
+func (m *MockRepository) CreateProblem(ctx context.Context, name string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateProblem", ctx, name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateProblem indicates an expected call of CreateProblem.
+func (mr *MockRepositoryMockRecorder) CreateProblem(ctx, name any) *MockRepositoryCreateProblemCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProblem", reflect.TypeOf((*MockRepository)(nil).CreateProblem), ctx, name)
+	return &MockRepositoryCreateProblemCall{Call: call}
+}
+
+// MockRepositoryCreateProblemCall wrap *gomock.Call
+type MockRepositoryCreateProblemCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockRepositoryCreateProblemCall) Return(arg0 error) *MockRepositoryCreateProblemCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockRepositoryCreateProblemCall) Do(f func(context.Context, string) error) *MockRepositoryCreateProblemCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockRepositoryCreateProblemCall) DoAndReturn(f func(context.Context, string) error) *MockRepositoryCreateProblemCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // CreateSession mocks base method.
 func (m *MockRepository) CreateSession(ctx context.Context, session domain.Session) error {
 	m.ctrl.T.Helper()
@@ -925,6 +963,45 @@ func (c *MockRepositoryGetOldestQueuedBenchmarkCall) Do(f func(context.Context) 
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockRepositoryGetOldestQueuedBenchmarkCall) DoAndReturn(f func(context.Context) (domain.Benchmark, error)) *MockRepositoryGetOldestQueuedBenchmarkCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// GetProblemName mocks base method.
+func (m *MockRepository) GetProblemName(ctx context.Context) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProblemName", ctx)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProblemName indicates an expected call of GetProblemName.
+func (mr *MockRepositoryMockRecorder) GetProblemName(ctx any) *MockRepositoryGetProblemNameCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProblemName", reflect.TypeOf((*MockRepository)(nil).GetProblemName), ctx)
+	return &MockRepositoryGetProblemNameCall{Call: call}
+}
+
+// MockRepositoryGetProblemNameCall wrap *gomock.Call
+type MockRepositoryGetProblemNameCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockRepositoryGetProblemNameCall) Return(arg0 string, arg1 error) *MockRepositoryGetProblemNameCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockRepositoryGetProblemNameCall) Do(f func(context.Context) (string, error)) *MockRepositoryGetProblemNameCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockRepositoryGetProblemNameCall) DoAndReturn(f func(context.Context) (string, error)) *MockRepositoryGetProblemNameCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

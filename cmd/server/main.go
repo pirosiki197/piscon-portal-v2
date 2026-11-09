@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/traPtitech/piscon-portal-v2/bundle"
 	"github.com/traPtitech/piscon-portal-v2/server/domain"
 	"github.com/traPtitech/piscon-portal-v2/server/handler"
 	"github.com/traPtitech/piscon-portal-v2/server/repository"
@@ -47,7 +48,11 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to create use case config:", err)
 	}
-	manager, err := provideInstanceManager()
+	problemBundle, err := provideBundle()
+	if err != nil {
+		log.Fatal("failed to load problem bundle:", err)
+	}
+	manager, err := provideInstanceManager(problemBundle)
 	if err != nil {
 		log.Fatal("failed to create instance manager:", err)
 	}
@@ -66,6 +71,9 @@ func main() {
 
 	if err := setupAdminUser(repo); err != nil {
 		log.Fatal("failed to setup admin user:", err)
+	}
+	if err := registerProblem(repo, problemBundle); err != nil {
+		log.Fatal("failed to register problem:", err)
 	}
 
 	benchService := server.NewBenchmarkService(useCase)
@@ -104,10 +112,28 @@ func provideUseCaseConfig() (usecase.Config, error) {
 	return usecase.Config{InstanceLimit: instanceLimit}, nil
 }
 
-func provideInstanceManager() (instance.Manager, error) {
+// provideBundle は、PROBLEM_BUNDLE_DIR の問題バンドルを読み込む。
+// PROBLEM_BUNDLE_DIR が空なら、問題バンドルを使わずに nil を返す。
+func provideBundle() (*bundle.Bundle, error) {
+	dir := os.Getenv("PROBLEM_BUNDLE_DIR")
+	if dir == "" {
+		return nil, nil
+	}
+	b, err := bundle.Load(dir)
+	if err != nil {
+		return nil, err
+	}
+	return &b, nil
+}
+
+func provideInstanceManager(problemBundle *bundle.Bundle) (instance.Manager, error) {
 	manager := os.Getenv("INSTANCE_MANAGER")
 	if manager == "aws" {
-		return provideAWSInstanceManager()
+		imageID, err := awsImageID(problemBundle)
+		if err != nil {
+			return nil, err
+		}
+		return provideAWSInstanceManager(imageID)
 	}
 	if manager == "" || manager == "mock" {
 		return provideFakeInstanceManager()
@@ -127,9 +153,25 @@ func provideFakeInstanceManager() (instance.Manager, error) {
 	return manager, nil
 }
 
-func provideAWSInstanceManager() (instance.Manager, error) {
+// awsImageID は、問題サーバーの AMI ID を問題バンドルか AWS_IMAGE_ID から決める。
+// 2 か所で別の値を指定する事故を防ぐため、両方に指定があるときはエラーにする。
+func awsImageID(problemBundle *bundle.Bundle) (string, error) {
+	envImageID := os.Getenv("AWS_IMAGE_ID")
+	if problemBundle == nil {
+		return envImageID, nil
+	}
+	if envImageID != "" {
+		return "", errors.New("AWS_IMAGE_ID must not be set when PROBLEM_BUNDLE_DIR is set; write environment.imageId in the bundle instead")
+	}
+	if problemBundle.ImageID == "" {
+		return "", fmt.Errorf("bundle %s has no environment.imageId", problemBundle.Name)
+	}
+	return problemBundle.ImageID, nil
+}
+
+func provideAWSInstanceManager(imageID string) (instance.Manager, error) {
 	awsConfig := aws.Config{
-		ImageID:         os.Getenv("AWS_IMAGE_ID"),
+		ImageID:         imageID,
 		InstanceType:    os.Getenv("AWS_INSTANCE_TYPE"),
 		Region:          os.Getenv("AWS_REGION"),
 		AccessKey:       os.Getenv("AWS_ACCESS_KEY"),
@@ -185,4 +227,16 @@ func setupAdminUser(repo repository.Repository) error {
 		return fmt.Errorf("create admin user: %w", err)
 	}
 	return nil
+}
+
+// registerProblem は、問題バンドルの問題を DB に記録する。問題バンドルを使わない場合は何もしない。
+func registerProblem(repo repository.Repository, problemBundle *bundle.Bundle) error {
+	if problemBundle == nil {
+		return nil
+	}
+	manual, err := os.ReadFile(problemBundle.ManualPath)
+	if err != nil {
+		return fmt.Errorf("read manual: %w", err)
+	}
+	return usecase.NewProblemUseCase(repo).RegisterProblem(context.Background(), problemBundle.Name, string(manual))
 }

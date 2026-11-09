@@ -72,3 +72,12 @@ CREATE TABLE IF NOT EXISTS `documents` (
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ポータルの DB が扱う問題。DB は 1 つの問題だけに使うので、行は高々 1 つになる。
+CREATE TABLE IF NOT EXISTS `problems` (
+    `id` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    `name` VARCHAR(255) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CHECK (`id` = 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

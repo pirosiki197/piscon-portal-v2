@@ -17,6 +17,7 @@ type Repository interface {
 	BenchmarkRepository
 	InstanceRepository
 	DocumentRepository
+	ProblemRepository
 }
 
 var (
