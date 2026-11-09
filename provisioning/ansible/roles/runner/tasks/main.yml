@@ -6,9 +6,19 @@
     mode: "0755"
   become: true
 
+- name: Copy problem bundle
+  ansible.builtin.copy:
+    src: "{{ problem.bundle_dir | regex_replace('/*$', '/') }}"
+    dest: /srv/runner/bundle/
+    mode: preserve
+  become: true
+  when: problem.bundle_dir != ''
+  notify:
+    - Restart runner service
+
 - name: Set runner config file
   ansible.builtin.template:
-    src: "problems/{{ problem.name }}.yaml.j2"
+    src: "{{ 'bundle.yaml.j2' if problem.bundle_dir != '' else 'problems/' ~ problem.name ~ '.yaml.j2' }}"
     dest: /srv/runner/piscon_runner.yaml
     mode: "0644"
   become: true
@@ -89,6 +99,11 @@
   when: runner_archive.changed or not runner_binary.stat.exists
   notify:
     - Restart runner service
+
+- name: Check problem bundle
+  ansible.builtin.command: /usr/local/bin/runner check /srv/runner/bundle
+  changed_when: false
+  when: problem.bundle_dir != ''
 
 - name: Create piscon-runner service
   ansible.builtin.copy:
