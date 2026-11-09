@@ -5,13 +5,15 @@
 
 ## 設定例
 
+問題バンドルのマニフェスト（`problem.yaml`）の `bench` に、`kind: command` で指定します。
+マニフェスト全体の形式は [`bundle/README.md`](../../../../bundle/README.md) を参照してください。
+
 ```yaml
-problem:
-  name: command
-  options:
-    dir: /srv/bench # ベンチマーカーを実行するディレクトリ
-    command: ["./bench", "--target", "{{ .TargetIP }}", "--all", "{{ join .InstanceIPs \",\" }}"]
-    timeout: 5m # (任意) デフォルトは10m
+bench:
+  kind: command
+  dir: bench # ベンチマーカーを実行するディレクトリ。問題バンドルからの相対パス
+  command: ["./bench", "--target", "{{ .TargetIP }}", "--all", "{{ join .InstanceIPs \",\" }}"]
+  timeout: 5m # (任意) デフォルトは10m
 ```
 
 ## コマンドライン
@@ -23,7 +25,7 @@ problem:
 - `join` は、一覧を区切り文字でつなぎます。`{{ join .InstanceIPs "," }}` のように使います
 
 `command` の先頭の要素が相対パスなら、`dir` を基準に解決します。
-runner は起動時に、仮の値でテンプレートを展開します。存在しない値を参照していると、runner は起動しません。
+runner は起動時と `runner check` の実行時に、仮の値でテンプレートを展開します。存在しない値を参照していると、エラーになります。
 
 ## 結果の返し方
 

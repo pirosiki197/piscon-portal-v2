@@ -15,9 +15,9 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/traPtitech/piscon-portal-v2/bundle"
 	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker"
 	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker/internal/reportfd"
-	"github.com/traPtitech/piscon-portal-v2/runner/config"
 	"github.com/traPtitech/piscon-portal-v2/runner/domain"
 )
 
@@ -47,53 +47,30 @@ type Command struct {
 
 var _ benchmarker.Benchmarker = (*Command)(nil)
 
-// New は、問題の設定を検証し、引数のテンプレートを解析する。
-//
-// 設定の項目:
-//   - dir: ベンチマーカーを実行するディレクトリ。必須。
-//   - command: コマンドラインを、Go の text/template の文字列のリストで指定する。必須。
-//   - timeout: [time.ParseDuration] の形式の文字列。省略すると10分になる。
-func New(conf config.Problem) (*Command, error) {
-	dir, ok := conf.Options["dir"].(string)
-	if !ok || dir == "" {
-		return nil, fmt.Errorf("invalid or missing 'dir' option in problem configuration")
+// New は、引数のテンプレートを解析し、仮の値で展開できるかを確かめる。
+// conf.Timeout が 0 なら、タイムアウトは10分になる。
+func New(conf bundle.CommandBench) (*Command, error) {
+	if len(conf.Command) == 0 {
+		return nil, errors.New("command is required")
 	}
-
-	rawArgs, ok := conf.Options["command"].([]any)
-	if !ok || len(rawArgs) == 0 {
-		return nil, fmt.Errorf("invalid or missing 'command' option in problem configuration")
-	}
-	args := make([]*template.Template, 0, len(rawArgs))
-	for i, raw := range rawArgs {
-		s, ok := raw.(string)
-		if !ok {
-			return nil, fmt.Errorf("'command' option must be a list of strings: element %d is %T", i, raw)
-		}
+	args := make([]*template.Template, 0, len(conf.Command))
+	for i, s := range conf.Command {
 		tmpl, err := template.New(fmt.Sprintf("command[%d]", i)).Funcs(templateFuncs).Parse(s)
 		if err != nil {
-			return nil, fmt.Errorf("parse 'command' option: %w", err)
+			return nil, fmt.Errorf("parse command: %w", err)
 		}
 		args = append(args, tmpl)
 	}
 	// 存在しないフィールドの参照は実行時まで分からないので、起動時に試しに展開して検出する。
 	if _, err := renderArgs(args, templateData{TargetIP: "192.0.2.1", InstanceIPs: []string{"192.0.2.1"}}); err != nil {
-		return nil, fmt.Errorf("invalid 'command' option: %w", err)
+		return nil, fmt.Errorf("invalid command: %w", err)
 	}
 
-	timeout := defaultTimeout
-	if v, exists := conf.Options["timeout"]; exists {
-		s, ok := v.(string)
-		if !ok {
-			return nil, fmt.Errorf("invalid 'timeout' option in problem configuration")
-		}
-		d, err := time.ParseDuration(s)
-		if err != nil || d <= 0 {
-			return nil, fmt.Errorf("invalid 'timeout' option in problem configuration")
-		}
-		timeout = d
+	timeout := conf.Timeout
+	if timeout == 0 {
+		timeout = defaultTimeout
 	}
-
-	return &Command{dir: dir, args: args, timeout: timeout}, nil
+	return &Command{dir: conf.Dir, args: args, timeout: timeout}, nil
 }
 
 func renderArgs(args []*template.Template, data templateData) ([]string, error) {

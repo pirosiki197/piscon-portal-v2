@@ -10,8 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/traPtitech/piscon-portal-v2/bundle"
 	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker/internal/reportfd"
-	"github.com/traPtitech/piscon-portal-v2/runner/config"
 	"github.com/traPtitech/piscon-portal-v2/runner/domain"
 )
 
@@ -39,16 +39,13 @@ func run(t *testing.T, b *Command, job *domain.Job) runResult {
 	return runResult{stdout: string(stdout), result: result, score: score, err: err}
 }
 
-func newShell(t *testing.T, script string, timeout string) *Command {
+func newShell(t *testing.T, script string, timeout time.Duration) *Command {
 	t.Helper()
-	options := map[string]any{
-		"dir":     t.TempDir(),
-		"command": []any{"sh", "-c", script},
-	}
-	if timeout != "" {
-		options["timeout"] = timeout
-	}
-	b, err := New(config.Problem{Name: "command", Options: options})
+	b, err := New(bundle.CommandBench{
+		Dir:     t.TempDir(),
+		Command: []string{"sh", "-c", script},
+		Timeout: timeout,
+	})
 	require.NoError(t, err)
 	return b
 }
@@ -107,7 +104,7 @@ func TestResult(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			b := newShell(t, tt.script, "")
+			b := newShell(t, tt.script, 0)
 
 			got := run(t, b, domain.NewJob("job-id", "192.0.2.1"))
 
@@ -127,7 +124,7 @@ func TestResult(t *testing.T) {
 
 func TestTimeoutStopsChildProcesses(t *testing.T) {
 	// バックグラウンドの子プロセスがstdoutを開いたまま残ると、runnerのログの読み取りが終わらない。
-	b := newShell(t, `sleep 30 & sleep 30`, "200ms")
+	b := newShell(t, `sleep 30 & sleep 30`, 200*time.Millisecond)
 
 	start := time.Now()
 	got := run(t, b, domain.NewJob("job-id", "192.0.2.1"))
@@ -142,10 +139,10 @@ func TestStartRendersArguments(t *testing.T) {
 	script := "#!/bin/sh\necho \"$@\"\necho '{\"score\":1,\"passed\":true,\"finished\":true}' >&3\n"
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "bench.sh"), []byte(script), 0o755))
 
-	b, err := New(config.Problem{Name: "command", Options: map[string]any{
-		"dir":     dir,
-		"command": []any{"./bench.sh", "--target", "{{ .TargetIP }}", "--all", `{{ join .InstanceIPs "," }}`},
-	}})
+	b, err := New(bundle.CommandBench{
+		Dir:     dir,
+		Command: []string{"./bench.sh", "--target", "{{ .TargetIP }}", "--all", `{{ join .InstanceIPs "," }}`},
+	})
 	require.NoError(t, err)
 
 	// 相対パスのコマンドはdirを基準に解決する。2回続けて実行できることも確かめる。
@@ -158,21 +155,16 @@ func TestStartRendersArguments(t *testing.T) {
 	}
 }
 
-func TestNewRejectsInvalidOptions(t *testing.T) {
-	tests := map[string]map[string]any{
-		"missing dir":     {"command": []any{"./bench"}},
-		"missing command": {"dir": "/tmp"},
-		"empty command":   {"dir": "/tmp", "command": []any{}},
-		"non-string arg":  {"dir": "/tmp", "command": []any{"./bench", 1}},
-		"unknown field":   {"dir": "/tmp", "command": []any{"./bench", "{{ .Target }}"}},
-		"broken template": {"dir": "/tmp", "command": []any{"./bench", "{{ .TargetIP"}},
-		"invalid timeout": {"dir": "/tmp", "command": []any{"./bench"}, "timeout": "soon"},
-		"zero timeout":    {"dir": "/tmp", "command": []any{"./bench"}, "timeout": "0s"},
+func TestNewRejectsInvalidCommand(t *testing.T) {
+	tests := map[string][]string{
+		"empty command":   {},
+		"unknown field":   {"./bench", "{{ .Target }}"},
+		"broken template": {"./bench", "{{ .TargetIP"},
 	}
 
-	for name, options := range tests {
+	for name, command := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := New(config.Problem{Name: "command", Options: options})
+			_, err := New(bundle.CommandBench{Dir: "/tmp", Command: command})
 			assert.Error(t, err)
 		})
 	}

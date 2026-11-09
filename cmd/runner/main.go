@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"time"
 
 	portalv1 "github.com/traPtitech/piscon-portal-v2/gen/portal/v1"
@@ -13,10 +14,22 @@ import (
 )
 
 func main() {
+	// runner check <bundle-dir> は、問題バンドルを検証して終了する。デプロイの最後に実行する。
+	if len(os.Args) == 3 && os.Args[1] == "check" {
+		if _, err := runner.NewBenchmarker(config.Config{Bundle: os.Args[2]}); err != nil {
+			log.Fatalf("invalid bundle: %v", err)
+		}
+		log.Printf("bundle is valid: %s", os.Args[2])
+		return
+	}
+
 	config, err := config.LoadFile()
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 		return
+	}
+	if err := config.Validate(); err != nil {
+		log.Fatalf("invalid config: %v", err)
 	}
 
 	conn, err := grpc.NewClient(config.Portal.Address,
@@ -30,13 +43,13 @@ func main() {
 	client := portalv1.NewBenchmarkServiceClient(conn)
 	p := portalGrpc.NewPortal(client, time.Second)
 
-	r, err := runner.Prepare(p, config.Problem)
+	r, err := runner.Prepare(p, config)
 	if err != nil {
 		log.Fatalf("failed to prepare runner: %v", err)
 		return
 	}
 
-	log.Printf("runner started: portal=%s, problem=%s\n", config.Portal.Address, config.Problem.Name)
+	log.Printf("runner started: portal=%s, bundle=%s, problem=%s\n", config.Portal.Address, config.Bundle, config.Problem.Name)
 
 	for {
 		if err := r.Run(); err != nil {

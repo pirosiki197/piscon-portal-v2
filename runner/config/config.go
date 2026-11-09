@@ -31,8 +31,11 @@ type Problem struct {
 	Options map[string]any `mapstructure:"options"`
 }
 
+// Config は runner の設定である。問題は Bundle と Problem のどちらか一方で指定する。
 type Config struct {
-	Portal  Portal  `mapstructure:"portal"`
+	Portal Portal `mapstructure:"portal"`
+	// Bundle は、問題バンドルのディレクトリである。
+	Bundle  string  `mapstructure:"bundle"`
 	Problem Problem `mapstructure:"problem"`
 }
 
@@ -40,8 +43,8 @@ func (c Config) Validate() error {
 	if c.Portal.Address == "" {
 		return fmt.Errorf("portal address is required")
 	}
-	if c.Problem.Name == "" {
-		return fmt.Errorf("problem name is required")
+	if (c.Bundle == "") == (c.Problem.Name == "") {
+		return fmt.Errorf("exactly one of bundle and problem.name is required")
 	}
 
 	return nil

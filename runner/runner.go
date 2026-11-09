@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/traPtitech/piscon-portal-v2/bundle"
 	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker"
 	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker/impl"
 	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker/impl/command"
@@ -28,7 +29,6 @@ const (
 
 const (
 	problemExample         string = "example"
-	problemCommand         string = "command"
 	problemPrivateIsu      string = "private_isu"
 	problemIsucon11Qualify string = "isucon11-qualify"
 	problemIsucon11Final   string = "isucon11-final"
@@ -40,9 +40,6 @@ var (
 	problemBenchmarks = map[string]func(conf config.Problem) (benchmarker.Benchmarker, error){
 		problemExample: func(_ config.Problem) (benchmarker.Benchmarker, error) {
 			return impl.NewExample(), nil
-		},
-		problemCommand: func(conf config.Problem) (benchmarker.Benchmarker, error) {
-			return command.New(conf)
 		},
 		problemPrivateIsu: func(conf config.Problem) (benchmarker.Benchmarker, error) {
 			return privateisu.New(conf)
@@ -67,13 +64,8 @@ type Runner struct {
 	benchmarker benchmarker.Benchmarker
 }
 
-func Prepare(portal portal.Portal, problemConfig config.Problem) (*Runner, error) {
-	newBenchmarkerFn, ok := problemBenchmarks[problemConfig.Name]
-	if !ok {
-		return nil, fmt.Errorf("unknown problem: %q", problemConfig.Name)
-	}
-
-	benchmarker, err := newBenchmarkerFn(problemConfig)
+func Prepare(portal portal.Portal, cfg config.Config) (*Runner, error) {
+	benchmarker, err := NewBenchmarker(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("create benchmarker: %w", err)
 	}
@@ -82,6 +74,35 @@ func Prepare(portal portal.Portal, problemConfig config.Problem) (*Runner, error
 		portal:      portal,
 		benchmarker: benchmarker,
 	}, nil
+}
+
+// NewBenchmarker は、設定で指定された問題のベンチマーカーを作る。
+// 問題バンドルを指定した場合は、マニフェストを読み込んで検証する。
+func NewBenchmarker(cfg config.Config) (benchmarker.Benchmarker, error) {
+	if cfg.Bundle == "" {
+		return newAdapter(cfg.Problem)
+	}
+
+	b, err := bundle.Load(cfg.Bundle)
+	if err != nil {
+		return nil, fmt.Errorf("load bundle: %w", err)
+	}
+	switch {
+	case b.Bench.Command != nil:
+		return command.New(*b.Bench.Command)
+	case b.Bench.Adapter != nil:
+		return newAdapter(config.Problem{Name: b.Bench.Adapter.Adapter, Options: b.Bench.Adapter.Options})
+	default:
+		return nil, fmt.Errorf("bundle %s has no bench", b.Name)
+	}
+}
+
+func newAdapter(conf config.Problem) (benchmarker.Benchmarker, error) {
+	newBenchmarkerFn, ok := problemBenchmarks[conf.Name]
+	if !ok {
+		return nil, fmt.Errorf("unknown problem: %q", conf.Name)
+	}
+	return newBenchmarkerFn(conf)
 }
 
 func (r *Runner) Run() error {
