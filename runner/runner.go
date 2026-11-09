@@ -89,7 +89,11 @@ func NewBenchmarker(cfg config.Config) (benchmarker.Benchmarker, error) {
 	}
 	switch {
 	case b.Bench.Command != nil:
-		return command.New(*b.Bench.Command)
+		bench, err := command.New(*b.Bench.Command)
+		if err != nil {
+			return nil, fmt.Errorf("create command benchmarker: %w", err)
+		}
+		return bench, nil
 	case b.Bench.Adapter != nil:
 		return newAdapter(config.Problem{Name: b.Bench.Adapter.Adapter, Options: b.Bench.Adapter.Options})
 	default:

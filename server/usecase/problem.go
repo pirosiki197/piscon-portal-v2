@@ -28,7 +28,7 @@ func NewProblemUseCase(repo repository.Repository) ProblemUseCase {
 }
 
 func (u *problemUseCaseImpl) RegisterProblem(ctx context.Context, name string, manual string) error {
-	return u.repo.Transaction(ctx, func(ctx context.Context) error {
+	err := u.repo.Transaction(ctx, func(ctx context.Context) error {
 		registered, err := u.repo.GetProblemName(ctx)
 		if err == nil {
 			if registered != name {
@@ -49,4 +49,8 @@ func (u *problemUseCaseImpl) RegisterProblem(ctx context.Context, name string, m
 		}
 		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("register problem: %w", err)
+	}
+	return nil
 }

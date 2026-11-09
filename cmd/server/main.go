@@ -121,7 +121,7 @@ func provideBundle() (*bundle.Bundle, error) {
 	}
 	b, err := bundle.Load(dir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load bundle: %w", err)
 	}
 	return &b, nil
 }
@@ -238,5 +238,8 @@ func registerProblem(repo repository.Repository, problemBundle *bundle.Bundle) e
 	if err != nil {
 		return fmt.Errorf("read manual: %w", err)
 	}
-	return usecase.NewProblemUseCase(repo).RegisterProblem(context.Background(), problemBundle.Name, string(manual))
+	if err := usecase.NewProblemUseCase(repo).RegisterProblem(context.Background(), problemBundle.Name, string(manual)); err != nil {
+		return fmt.Errorf("bundle %q: %w", problemBundle.Name, err)
+	}
+	return nil
 }

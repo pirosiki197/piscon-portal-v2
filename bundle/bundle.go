@@ -153,7 +153,7 @@ func resolveFile(dir, p string, wantDir bool) (string, error) {
 	abs := filepath.Join(dir, p)
 	info, err := os.Stat(abs)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("stat %q: %w", p, err)
 	}
 	if info.IsDir() != wantDir {
 		if wantDir {

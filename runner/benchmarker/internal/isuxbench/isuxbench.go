@@ -35,7 +35,11 @@ type Process = reportfd.Process
 // 成功したら、呼び出し側はリソースを解放するために [Process.Wait] を呼ばなければならない。
 func Start(cmd *exec.Cmd) (*Process, benchmarker.Outputs, time.Time, error) {
 	cmd.Env = append(cmd.Environ(), fmt.Sprintf("ISUXBENCH_REPORT_FD=%d", reportfd.FD))
-	return reportfd.Start(cmd, func(r io.Reader) reportfd.Decoder { return decoder{r: r} })
+	proc, out, startedAt, err := reportfd.Start(cmd, func(r io.Reader) reportfd.Decoder { return decoder{r: r} })
+	if err != nil {
+		return nil, benchmarker.Outputs{}, time.Time{}, fmt.Errorf("start benchmarker process: %w", err)
+	}
+	return proc, out, startedAt, nil
 }
 
 type decoder struct {
