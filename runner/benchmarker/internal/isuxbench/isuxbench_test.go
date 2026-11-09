@@ -1,6 +1,7 @@
 package isuxbench
 
 import (
+	"bytes"
 	"encoding/binary"
 	"io"
 	"testing"
@@ -8,6 +9,7 @@ import (
 	"github.com/isucon/isucon10-portal/proto.go/isuxportal/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker/internal/reportfd"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -19,39 +21,39 @@ func encodeReport(t *testing.T, res *resources.BenchmarkResult) []byte {
 	return append(buf, data...)
 }
 
-func TestWatchReport(t *testing.T) {
+// decodeAll は、ストリームがエラーで終わるまでレポートを読む。
+func decodeAll(data []byte) ([]reportfd.Report, error) {
+	dec := decoder{r: bytes.NewReader(data)}
+	var reports []reportfd.Report
+	for {
+		r, err := dec.Decode()
+		if err != nil {
+			return reports, err
+		}
+		reports = append(reports, r)
+	}
+}
+
+func TestDecoder(t *testing.T) {
 	progress := &resources.BenchmarkResult{Finished: false, Score: 100}
 
 	tests := map[string]struct {
 		reports         func(t *testing.T) []byte
-		wantPassed      bool
-		wantScore       int
-		wantErrNoFinal  bool
+		want            []reportfd.Report
 		wantErrUnexpEOF bool
 	}{
-		"passed": {
+		"progress and final": {
 			reports: func(t *testing.T) []byte {
 				return append(encodeReport(t, progress),
 					encodeReport(t, &resources.BenchmarkResult{Finished: true, Passed: true, Score: 200})...)
 			},
-			wantPassed: true,
-			wantScore:  200,
-		},
-		"failed": {
-			reports: func(t *testing.T) []byte {
-				return encodeReport(t, &resources.BenchmarkResult{Finished: true, Passed: false, Score: 0})
+			want: []reportfd.Report{
+				{Score: 100},
+				{Score: 200, Passed: true, Finished: true},
 			},
-			wantPassed: false,
-			wantScore:  0,
 		},
 		"no reports": {
-			reports:        func(*testing.T) []byte { return nil },
-			wantErrNoFinal: true,
-		},
-		"no final report": {
-			reports:        func(t *testing.T) []byte { return encodeReport(t, progress) },
-			wantScore:      100,
-			wantErrNoFinal: true,
+			reports: func(*testing.T) []byte { return nil },
 		},
 		"truncated length": {
 			reports:         func(*testing.T) []byte { return []byte{0x00} },
@@ -72,26 +74,14 @@ func TestWatchReport(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			r, w := io.Pipe()
-			p := &Process{resultCh: make(chan result, 1)}
-			go func() {
-				_, _ = w.Write(tt.reports(t))
-				_ = w.Close()
-			}()
+			got, err := decodeAll(tt.reports(t))
 
-			p.watchReport(r)
-			res := <-p.resultCh
-
-			assert.Equal(t, tt.wantScore, p.LatestScore())
-			switch {
-			case tt.wantErrNoFinal:
-				assert.ErrorIs(t, res.err, ErrNoFinalReport)
-			case tt.wantErrUnexpEOF:
-				assert.ErrorIs(t, res.err, io.ErrUnexpectedEOF)
-				assert.NotErrorIs(t, res.err, ErrNoFinalReport)
-			default:
-				require.NoError(t, res.err)
-				assert.Equal(t, tt.wantPassed, res.passed)
+			assert.Equal(t, tt.want, got)
+			if tt.wantErrUnexpEOF {
+				assert.ErrorIs(t, err, io.ErrUnexpectedEOF)
+				assert.NotErrorIs(t, err, io.EOF)
+			} else {
+				assert.ErrorIs(t, err, io.EOF)
 			}
 		})
 	}
