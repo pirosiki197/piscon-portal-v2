@@ -6,6 +6,7 @@
 ```text
 dist/
 ├── problem.yaml   # マニフェスト
+├── template.yaml  # チーム環境の CloudFormation テンプレート
 ├── bench/         # runner ホストに配置するベンチ一式
 └── manual.md      # 参加者向けのマニュアル
 ```
@@ -17,8 +18,10 @@ runner とポータルは、このパッケージでマニフェストを読み�
 ```yaml
 name: sample-fib # 問題の名前
 environment:
+  template: template.yaml
   imageId: ami-0123456789abcdef0 # (任意) 問題サーバーの AMI ID
 bench:
+  target: Webapp # (任意) ベンチの対象に固定するサーバーの名前
   kind: command # command か adapter
   dir: bench
   command: ["./bench", "--target", "{{ .TargetIP }}"]
@@ -28,6 +31,8 @@ manual: manual.md
 
 - パスは、問題バンドルのディレクトリからの相対パスで書きます。問題バンドルの外を指すパスは使えません
 - 知らないキーがあるとエラーになります
+- `environment.template` のテンプレートに直接書いた `AWS::EC2::Instance` が、チーム環境のサーバーになります。サーバーの名前は論理 ID です。テンプレートにサーバーが 1 つもないとエラーになります
+- `bench.target` を書くと、ベンチの対象はいつもその名前のサーバーになります。書かなければ、チームがチーム環境のサーバーから対象を選びます。テンプレートにない名前を書くとエラーになります
 - `bench` の書き方は、`kind` によって変わります
   - `kind: command` は、作問者のベンチマーカーを共通の形式で実行します。`dir`、`command`、`timeout` を書きます。詳しくは [`runner/benchmarker/impl/command/README.md`](../runner/benchmarker/impl/command/README.md) を参照してください
   - `kind: adapter` は、runner 内の既存の実装（過去問）でベンチを実行します。`adapter` に実装の名前（`isucon13` など）を、`options` にその実装の設定を書きます

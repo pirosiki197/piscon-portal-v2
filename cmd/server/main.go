@@ -163,10 +163,10 @@ func awsImageID(problemBundle *bundle.Bundle) (string, error) {
 	if envImageID != "" {
 		return "", errors.New("AWS_IMAGE_ID must not be set when PROBLEM_BUNDLE_DIR is set; write environment.imageId in the bundle instead")
 	}
-	if problemBundle.ImageID == "" {
+	if problemBundle.Environment.ImageID == "" {
 		return "", fmt.Errorf("bundle %s has no environment.imageId", problemBundle.Name)
 	}
-	return problemBundle.ImageID, nil
+	return problemBundle.Environment.ImageID, nil
 }
 
 func provideAWSInstanceManager(imageID string) (instance.Manager, error) {

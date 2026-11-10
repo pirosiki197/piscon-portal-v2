@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"gopkg.in/yaml.v2"
+	yamlv3 "gopkg.in/yaml.v3"
 )
 
 // ManifestFile は、問題バンドルのディレクトリ直下に置くマニフェストのファイル名である。
@@ -19,15 +21,28 @@ const ManifestFile = "problem.yaml"
 
 // Bundle は、検証済みの問題バンドルである。パスはすべて絶対パスで持つ。
 type Bundle struct {
-	Name string
+	Name        string
+	Environment Environment
+	Bench       Bench
+	ManualPath  string
+}
+
+// Environment は、チーム環境の作り方である。
+type Environment struct {
+	// TemplatePath は、チーム環境を作る CloudFormation テンプレートの絶対パスである。
+	TemplatePath string
+	// Servers は、テンプレートに直接書いた AWS::EC2::Instance の論理 ID を、名前の順に並べたものである。
+	// 1 つ以上ある。
+	Servers []string
 	// ImageID は、問題サーバーの AMI ID である。マニフェストで省略されていれば空になる。
-	ImageID    string
-	Bench      Bench
-	ManualPath string
+	ImageID string
 }
 
 // Bench は、ベンチの起動方法である。Command と Adapter のどちらか一方だけが nil でない。
 type Bench struct {
+	// Target は、ベンチの対象に固定するサーバーの名前である。空なら、チームが対象を選ぶ。
+	// 空でなければ、Environment.Servers のどれかである。
+	Target  string
 	Command *CommandBench
 	Adapter *AdapterBench
 }
@@ -49,9 +64,11 @@ type AdapterBench struct {
 type manifest struct {
 	Name        string `yaml:"name"`
 	Environment struct {
-		ImageID string `yaml:"imageId"`
+		Template string `yaml:"template"`
+		ImageID  string `yaml:"imageId"`
 	} `yaml:"environment"`
 	Bench struct {
+		Target  string         `yaml:"target"`
 		Kind    string         `yaml:"kind"`
 		Dir     string         `yaml:"dir"`
 		Command []string       `yaml:"command"`
@@ -89,20 +106,83 @@ func (m manifest) validate(dir string) (Bundle, error) {
 	if m.Name == "" {
 		return Bundle{}, errors.New("name is required")
 	}
+	env, err := m.validateEnvironment(dir)
+	if err != nil {
+		return Bundle{}, fmt.Errorf("environment: %w", err)
+	}
 	bench, err := m.validateBench(dir)
 	if err != nil {
 		return Bundle{}, fmt.Errorf("bench: %w", err)
+	}
+	if bench.Target != "" && !slices.Contains(env.Servers, bench.Target) {
+		return Bundle{}, fmt.Errorf("bench: target %q is not a server in the template; servers are %v", bench.Target, env.Servers)
 	}
 	manual, err := resolveFile(dir, m.Manual, false)
 	if err != nil {
 		return Bundle{}, fmt.Errorf("manual: %w", err)
 	}
 	return Bundle{
-		Name:       m.Name,
-		ImageID:    m.Environment.ImageID,
-		Bench:      bench,
-		ManualPath: manual,
+		Name:        m.Name,
+		Environment: env,
+		Bench:       bench,
+		ManualPath:  manual,
 	}, nil
+}
+
+func (m manifest) validateEnvironment(dir string) (Environment, error) {
+	template, err := resolveFile(dir, m.Environment.Template, false)
+	if err != nil {
+		return Environment{}, fmt.Errorf("template: %w", err)
+	}
+	data, err := os.ReadFile(template)
+	if err != nil {
+		return Environment{}, fmt.Errorf("read template: %w", err)
+	}
+	servers, err := templateServers(data)
+	if err != nil {
+		return Environment{}, fmt.Errorf("template: %w", err)
+	}
+	return Environment{TemplatePath: template, Servers: servers, ImageID: m.Environment.ImageID}, nil
+}
+
+// templateServers は、CloudFormation テンプレートの Resources から AWS::EC2::Instance の論理 ID を探す。
+// テンプレートは !Ref のような短縮形のタグを含むので、値を型に読み込まずにノードのまま辿る。
+func templateServers(data []byte) ([]string, error) {
+	var doc yamlv3.Node
+	if err := yamlv3.Unmarshal(data, &doc); err != nil {
+		return nil, fmt.Errorf("parse: %w", err)
+	}
+	if len(doc.Content) == 0 {
+		return nil, errors.New("empty template")
+	}
+	resources := mappingValue(doc.Content[0], "Resources")
+	if resources == nil || resources.Kind != yamlv3.MappingNode {
+		return nil, errors.New("resources not found")
+	}
+	var servers []string
+	for i := 0; i+1 < len(resources.Content); i += 2 {
+		typ := mappingValue(resources.Content[i+1], "Type")
+		if typ != nil && typ.Value == "AWS::EC2::Instance" {
+			servers = append(servers, resources.Content[i].Value)
+		}
+	}
+	if len(servers) == 0 {
+		return nil, errors.New("no AWS::EC2::Instance in resources")
+	}
+	slices.Sort(servers)
+	return servers, nil
+}
+
+func mappingValue(n *yamlv3.Node, key string) *yamlv3.Node {
+	if n.Kind != yamlv3.MappingNode {
+		return nil
+	}
+	for i := 0; i+1 < len(n.Content); i += 2 {
+		if n.Content[i].Value == key {
+			return n.Content[i+1]
+		}
+	}
+	return nil
 }
 
 func (m manifest) validateBench(dir string) (Bench, error) {
@@ -126,7 +206,7 @@ func (m manifest) validateBench(dir string) (Bench, error) {
 				return Bench{}, fmt.Errorf("timeout must be a positive duration such as 5m: %q", b.Timeout)
 			}
 		}
-		return Bench{Command: &CommandBench{Dir: benchDir, Command: b.Command, Timeout: timeout}}, nil
+		return Bench{Target: b.Target, Command: &CommandBench{Dir: benchDir, Command: b.Command, Timeout: timeout}}, nil
 	case "adapter":
 		if b.Dir != "" || b.Command != nil || b.Timeout != "" {
 			return Bench{}, errors.New("dir, command and timeout are only for kind command")
@@ -134,7 +214,7 @@ func (m manifest) validateBench(dir string) (Bench, error) {
 		if b.Adapter == "" {
 			return Bench{}, errors.New("adapter is required")
 		}
-		return Bench{Adapter: &AdapterBench{Adapter: b.Adapter, Options: b.Options}}, nil
+		return Bench{Target: b.Target, Adapter: &AdapterBench{Adapter: b.Adapter, Options: b.Options}}, nil
 	case "":
 		return Bench{}, errors.New("kind is required")
 	default:

@@ -10,12 +10,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// newBundleDir は、bench ディレクトリと manual.md を含むバンドルを作り、manifest を書き込む。
+// testTemplate は、短縮形のタグを含む CloudFormation テンプレートである。
+const testTemplate = `
+Parameters:
+  ImageId:
+    Type: AWS::EC2::Image::Id
+Resources:
+  Webapp:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+  Router:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      UserData: !Base64
+        Fn::Sub: echo ${Webapp.PrivateIp}
+  Eip:
+    Type: AWS::EC2::EIP
+`
+
+// newBundleDir は、bench ディレクトリ、manual.md、template.yaml を含むバンドルを作り、manifest を書き込む。
 func newBundleDir(t *testing.T, manifest string) string {
 	t.Helper()
 	dir := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "bench"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "manual.md"), []byte("# manual"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "template.yaml"), []byte(testTemplate), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "empty.yaml"), []byte("Resources:\n  Eip:\n    Type: AWS::EC2::EIP\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, ManifestFile), []byte(manifest), 0o644))
 	return dir
 }
@@ -24,8 +46,10 @@ func TestLoadCommand(t *testing.T) {
 	dir := newBundleDir(t, `
 name: sample
 environment:
+  template: template.yaml
   imageId: ami-0123
 bench:
+  target: Router
   kind: command
   dir: bench
   command: ["./bench", "--target", "{{ .TargetIP }}"]
@@ -37,9 +61,13 @@ manual: manual.md
 	require.NoError(t, err)
 
 	assert.Equal(t, Bundle{
-		Name:    "sample",
-		ImageID: "ami-0123",
-		Bench: Bench{Command: &CommandBench{
+		Name: "sample",
+		Environment: Environment{
+			TemplatePath: filepath.Join(dir, "template.yaml"),
+			Servers:      []string{"Router", "Webapp"},
+			ImageID:      "ami-0123",
+		},
+		Bench: Bench{Target: "Router", Command: &CommandBench{
 			Dir:     filepath.Join(dir, "bench"),
 			Command: []string{"./bench", "--target", "{{ .TargetIP }}"},
 			Timeout: 2 * time.Minute,
@@ -51,6 +79,8 @@ manual: manual.md
 func TestLoadAdapter(t *testing.T) {
 	dir := newBundleDir(t, `
 name: isucon13
+environment:
+  template: template.yaml
 bench:
   kind: adapter
   adapter: isucon13
@@ -64,6 +94,7 @@ manual: manual.md
 	b, err := Load(dir)
 	require.NoError(t, err)
 
+	assert.Empty(t, b.Bench.Target)
 	assert.Nil(t, b.Bench.Command)
 	assert.Equal(t, &AdapterBench{
 		Adapter: "isucon13",
@@ -73,6 +104,8 @@ manual: manual.md
 
 func TestLoadRejectsInvalidManifest(t *testing.T) {
 	const commandBench = `
+environment:
+  template: template.yaml
 bench:
   kind: command
   dir: bench
@@ -95,6 +128,9 @@ bench:
 		"manual not found":        "name: x\nmanual: nope.md\n" + commandBench,
 		"manual outside (abs)":    "name: x\nmanual: /etc/passwd\n" + commandBench,
 		"manual is the bench dir": "name: x\nmanual: bench\n" + commandBench,
+		"missing template":        "name: x\nmanual: manual.md\nbench:\n  kind: command\n  dir: bench\n  command: [a]\n",
+		"template without server": "name: x\nmanual: manual.md\nenvironment:\n  template: empty.yaml\nbench:\n  kind: command\n  dir: bench\n  command: [a]\n",
+		"target is not a server":  "name: x\nmanual: manual.md\nenvironment:\n  template: template.yaml\nbench:\n  target: Eip\n  kind: command\n  dir: bench\n  command: [a]\n",
 	}
 
 	for name, manifest := range tests {

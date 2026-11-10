@@ -18,7 +18,9 @@ func writeBundle(t *testing.T, bench string) string {
 	dir := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "bench"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "manual.md"), nil, 0o644))
-	manifest := "name: sample\nmanual: manual.md\nbench:\n" + bench
+	template := "Resources:\n  Webapp:\n    Type: AWS::EC2::Instance\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "template.yaml"), []byte(template), 0o644))
+	manifest := "name: sample\nmanual: manual.md\nenvironment:\n  template: template.yaml\nbench:\n" + bench
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "problem.yaml"), []byte(manifest), 0o644))
 	return dir
 }
