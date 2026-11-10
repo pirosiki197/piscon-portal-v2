@@ -57,17 +57,13 @@ secrets:
 local:
   git_tag: "{{ 利用する piscon-portal-v2 の Git tag (例: v0.1.0) }}"
   problem:
-    bundle_dir: "{{ (問題バンドルを使う場合) 手元の問題バンドルのディレクトリ。指定すると name は使わない }}"
-    name: "{{ (問題バンドルを使わない場合) 問題名 (private_isu / isucon11-qualify / isucon11-final / isucon13 / isucon14) }}"
-    instance_limit: {{ インスタンス数の上限 }}
-    image_id: "{{ (問題バンドルを使わない場合) 問題のAMI ID。問題バンドルを使う場合はマニフェストの environment.imageId に書く }}"
-    instance_type: "{{ 問題のインスタンスタイプ }}"
+    bundle_dir: "{{ 手元の問題バンドルのディレクトリ。ポータルのデプロイには必須。指定すると name は使わない }}"
+    name: "{{ (runner だけを問題バンドルなしでデプロイする場合) 問題名 (private_isu / isucon11-qualify / isucon11-final / isucon13 / isucon14) }}"
 
   aws:
     region: "{{ AWSのリージョン }}"
     subnet_id: "{{ 問題サーバーを配置するAWSのサブネットID }}"
     security_group_id: "{{ CDK の ProblemSecurityGroupId に出力された問題サーバー用セキュリティグループID }}"
-    key_pair_name: "{{ AWSのキーペア名 }}"
 
   runner:
     portal_address: "{{ Portal の gRPC サーバーのアドレス（PortalのプライベートIP:50051） }}"

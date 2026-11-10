@@ -4,8 +4,9 @@ PISCON Portal v2 をインストールし、サービスとして起動します
 docker compose を使ってアプリサーバー、フロントエンド、MariaDB を起動します。これらは systemd のサービスとして起動します。
 アプリサーバーとフロントエンドは、GitHub Container Registry からコンテナイメージを取得します。
 
-`problem.bundle_dir` を指定すると、問題バンドルを `/srv/portal/bundle` にコピーし、ポータルのコンテナに読み込ませます。
-ポータルは、問題サーバーの AMI ID を問題バンドルのマニフェストから読みます。
+`problem.bundle_dir` の問題バンドルを `/srv/portal/bundle` にコピーし、ポータルのコンテナに読み込ませます。`problem.bundle_dir` は必須です。
+ポータルは、チームが作るチーム環境を、問題バンドルの環境テンプレートと AMI ID から CloudFormation のスタックとして作ります。
+ポータルは起動時にテンプレートを CloudFormation の検証 API で確かめるので、ポータルの AWS の認証情報には CloudFormation の権限が要ります。
 
 ## 問題の切り替え
 
@@ -14,6 +15,6 @@ docker compose を使ってアプリサーバー、フロントエンド、Maria
 
 問題を切り替えるときは、次の順に行います。
 
-1. 全チームのインスタンスを削除する。インスタンスは DB の外の AWS にあるので、DB を先にリセットすると、ポータルから削除できなくなる
+1. 全チームのチーム環境を削除する。チーム環境は DB の外の AWS にあるので、DB を先にリセットすると、ポータルから削除できなくなる
 2. ポータルのホストで、DB のボリュームごとコンテナを削除する（`docker compose down -v`）。スコアの履歴やチームも消える
 3. 新しい問題バンドルを指定して、portal と runner の playbook を実行する

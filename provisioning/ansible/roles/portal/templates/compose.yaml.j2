@@ -29,10 +29,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
-{% if problem.bundle_dir != '' %}
     volumes:
       - ./bundle:/bundle:ro
-{% endif %}
 
   frontend:
     image: "ghcr.io/traptitech/piscon-portal-v2/frontend:{{ image_tag }}"

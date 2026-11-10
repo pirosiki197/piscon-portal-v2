@@ -132,53 +132,41 @@ export class AwsStack extends cdk.Stack {
 			ec2.Port.HTTPS,
 			"Allow HTTPS",
 		);
+		// ポータルは、問題の環境テンプレートからチームごとのスタックを作る。
+		// スタックはポータルの権限でリソースを作るので、テンプレートが作る EC2 のリソースを決め打ちできない。
 		portal.addToRolePolicy(
 			new iam.PolicyStatement({
-				sid: "EC2DescribeOps",
+				sid: "EC2ForTeamEnvironments",
 				effect: iam.Effect.ALLOW,
-				actions: [
-					"ec2:DescribeInstances",
-					"ec2:DescribeInstanceStatus",
-					"ec2:DescribeImages",
-					"ec2:DescribeVolumes",
-					"ec2:DescribeTags",
-				],
+				actions: ["ec2:*"],
 				resources: ["*"],
+				conditions: {
+					StringEquals: { "aws:RequestedRegion": this.region },
+				},
 			}),
 		);
 		portal.addToRolePolicy(
 			new iam.PolicyStatement({
-				sid: "EC2LifecycleOps",
+				sid: "CloudFormationTeamStacks",
 				effect: iam.Effect.ALLOW,
 				actions: [
-					"ec2:RunInstances",
-					"ec2:StartInstances",
-					"ec2:StopInstances",
-					"ec2:RebootInstances",
-					"ec2:TerminateInstances",
+					"cloudformation:CreateStack",
+					"cloudformation:TagResource",
+					"cloudformation:DeleteStack",
+					"cloudformation:DescribeStacks",
+					"cloudformation:ListStackResources",
 				],
 				resources: [
-					`arn:aws:ec2:${this.region}:${this.account}:instance/*`,
-					`arn:aws:ec2:${this.region}::image/*`,
-					`arn:aws:ec2:${this.region}:${this.account}:subnet/*`,
-					`arn:aws:ec2:${this.region}:${this.account}:security-group/*`,
-					`arn:aws:ec2:${this.region}:${this.account}:volume/*`,
-					`arn:aws:ec2:${this.region}:${this.account}:network-interface/*`,
-					`arn:aws:ec2:${this.region}:${this.account}:key-pair/*`,
+					`arn:aws:cloudformation:${this.region}:${this.account}:stack/piscon-*/*`,
 				],
 			}),
 		);
 		portal.addToRolePolicy(
 			new iam.PolicyStatement({
-				sid: "EC2TagOnRun",
+				sid: "CloudFormationValidate",
 				effect: iam.Effect.ALLOW,
-				actions: ["ec2:CreateTags"],
-				resources: [`arn:aws:ec2:${this.region}:${this.account}:instance/*`],
-				conditions: {
-					StringEquals: {
-						"ec2:CreateAction": "RunInstances",
-					},
-				},
+				actions: ["cloudformation:ValidateTemplate"],
+				resources: ["*"],
 			}),
 		);
 

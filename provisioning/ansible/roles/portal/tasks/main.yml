@@ -6,13 +6,17 @@
     mode: "0755"
   become: true
 
+- name: Check problem bundle is given
+  ansible.builtin.assert:
+    that: problem.bundle_dir != ''
+    fail_msg: The portal creates team environments from the problem bundle; set local.problem.bundle_dir.
+
 - name: Copy problem bundle
   ansible.builtin.copy:
     src: "{{ problem.bundle_dir | regex_replace('/*$', '/') }}"
     dest: /srv/portal/bundle/
     mode: preserve
   become: true
-  when: problem.bundle_dir != ''
   notify:
     - Restart portal service
 
