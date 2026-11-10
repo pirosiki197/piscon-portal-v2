@@ -18,8 +18,6 @@ import (
 type EnvironmentUseCase interface {
 	// GetTeamEnvironment は、チームの削除されていないチーム環境を返す。なければ [ErrNotFound] を返す。
 	GetTeamEnvironment(ctx context.Context, teamID uuid.UUID) (TeamEnvironment, error)
-	// GetEnvironments は、削除されていないチーム環境をすべて返す。
-	GetEnvironments(ctx context.Context) ([]domain.Environment, error)
 	// CreateEnvironment は、チーム環境の作成をプロバイダーに依頼し、記録する。作成の完了は待たない。
 	// チームに削除されていないチーム環境がすでにあれば、[UseCaseError] を返す。
 	CreateEnvironment(ctx context.Context, teamID uuid.UUID) (TeamEnvironment, error)
@@ -71,24 +69,6 @@ func (u *environmentUseCaseImpl) GetTeamEnvironment(ctx context.Context, teamID 
 		return TeamEnvironment{}, err
 	}
 	return u.toTeamEnvironment(env), nil
-}
-
-func (u *environmentUseCaseImpl) GetEnvironments(ctx context.Context) ([]domain.Environment, error) {
-	envs, err := u.repo.GetEnvironments(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("get environments: %w", err)
-	}
-	result := make([]domain.Environment, 0, len(envs))
-	for _, env := range envs {
-		synced, err := u.syncer.sync(ctx, env)
-		if err != nil {
-			return nil, err
-		}
-		if synced.DeletedAt == nil {
-			result = append(result, synced)
-		}
-	}
-	return result, nil
 }
 
 func (u *environmentUseCaseImpl) CreateEnvironment(ctx context.Context, teamID uuid.UUID) (TeamEnvironment, error) {

@@ -29,8 +29,8 @@ type GetDocsRes interface {
 	getDocsRes()
 }
 
-type GetEnvironmentsRes interface {
-	getEnvironmentsRes()
+type GetInstancesRes interface {
+	getInstancesRes()
 }
 
 type GetMeRes interface {

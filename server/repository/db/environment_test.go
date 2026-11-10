@@ -103,21 +103,3 @@ func TestDeleteEnvironment(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, instances)
 }
-
-func TestGetEnvironments(t *testing.T) {
-	t.Parallel()
-
-	repo, _ := setupRepository(t)
-	ctx := t.Context()
-
-	active := newTestEnvironment(uuid.New())
-	deleted := newTestEnvironment(uuid.New())
-	require.NoError(t, repo.CreateEnvironment(ctx, active))
-	require.NoError(t, repo.CreateEnvironment(ctx, deleted))
-	require.NoError(t, repo.DeleteEnvironment(ctx, deleted.ID))
-
-	got, err := repo.GetEnvironments(ctx)
-	require.NoError(t, err)
-	require.Len(t, got, 1)
-	assert.Equal(t, active.ID, got[0].ID)
-}

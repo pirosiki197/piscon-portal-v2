@@ -26,6 +26,14 @@ func (h *Handler) GetTeamInstances(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
+func (h *Handler) GetInstances(c echo.Context) error {
+	instances, err := h.useCase.GetAllInstances(c.Request().Context())
+	if err != nil {
+		return internalServerErrorResponse(c, err)
+	}
+	return c.JSON(http.StatusOK, lo.Map(instances, toOpenAPIInstance))
+}
+
 func toOpenAPIInstance(instance domain.Instance, _ int) openapi.Instance {
 	privateIP, publicIP := "", ""
 	if instance.Infra.PrivateIP != nil {

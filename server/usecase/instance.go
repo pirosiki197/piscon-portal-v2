@@ -13,6 +13,8 @@ import (
 type InstanceUseCase interface {
 	// GetTeamInstances returns all instances for the given team. Deleted instances are included for historical references.
 	GetTeamInstances(ctx context.Context, teamID uuid.UUID) ([]domain.Instance, error)
+	// GetAllInstances returns all instances. Deleted instances are included for historical references.
+	GetAllInstances(ctx context.Context) ([]domain.Instance, error)
 }
 
 type InstanceUseCaseImpl struct {
@@ -33,6 +35,10 @@ func (i *InstanceUseCaseImpl) GetTeamInstances(ctx context.Context, teamID uuid.
 		return nil, fmt.Errorf("get team instances: %w", err)
 	}
 
+	return i.withInfra(ctx, instances)
+}
+
+func (i *InstanceUseCaseImpl) withInfra(ctx context.Context, instances []domain.Instance) ([]domain.Instance, error) {
 	infraInstanceIDs := make([]string, 0, len(instances))
 	for _, inst := range instances {
 		infraInstanceIDs = append(infraInstanceIDs, inst.Infra.ProviderInstanceID)
@@ -44,6 +50,14 @@ func (i *InstanceUseCaseImpl) GetTeamInstances(ctx context.Context, teamID uuid.
 	}
 
 	return setInfraInstances(instances, infraInstances), nil
+}
+
+func (i *InstanceUseCaseImpl) GetAllInstances(ctx context.Context) ([]domain.Instance, error) {
+	instances, err := i.repo.GetAllInstances(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("get all instances: %w", err)
+	}
+	return i.withInfra(ctx, instances)
 }
 
 // setInfraInstances は、instances のそれぞれにプロバイダーから読んだ状態を入れた、新しいスライスを返す。

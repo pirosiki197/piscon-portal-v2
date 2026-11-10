@@ -382,8 +382,8 @@ func (s GetBenchmarksOKApplicationJSON) Validate() error {
 	return nil
 }
 
-func (s GetEnvironmentsOKApplicationJSON) Validate() error {
-	alias := ([]Environment)(s)
+func (s GetInstancesOKApplicationJSON) Validate() error {
+	alias := ([]Instance)(s)
 	if alias == nil {
 		return errors.New("nil is invalid value")
 	}

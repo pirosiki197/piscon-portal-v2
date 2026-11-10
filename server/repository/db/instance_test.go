@@ -86,4 +86,13 @@ func TestGetTeamInstances(t *testing.T) {
 		assert.Len(t, got, 1)
 		testutil.ContainsInstance(t, got, instances[0])
 	})
+
+	t.Run("全チームの削除済みも含める", func(t *testing.T) {
+		got, err := repo.GetAllInstances(t.Context())
+		assert.NoError(t, err)
+		assert.Len(t, got, 4)
+		for _, want := range instances {
+			testutil.ContainsInstance(t, got, want)
+		}
+	})
 }

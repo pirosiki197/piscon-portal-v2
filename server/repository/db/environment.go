@@ -65,16 +65,6 @@ func (r *Repository) findEnvironment(ctx context.Context, mods ...bob.Mod[*diale
 	return envs[0], nil
 }
 
-func (r *Repository) GetEnvironments(ctx context.Context) ([]domain.Environment, error) {
-	envs, err := models.Environments.Query(
-		models.SelectWhere.Environments.DeletedAt.IsNull(),
-	).All(ctx, r.executor(ctx))
-	if err != nil {
-		return nil, fmt.Errorf("get environments: %w", err)
-	}
-	return r.withInstances(ctx, envs)
-}
-
 // withInstances は、チーム環境の行をドメインの型に変え、それぞれのサーバーを名前の順に入れる。
 func (r *Repository) withInstances(ctx context.Context, envs models.EnvironmentSlice) ([]domain.Environment, error) {
 	if len(envs) == 0 {

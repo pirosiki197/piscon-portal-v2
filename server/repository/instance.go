@@ -12,4 +12,6 @@ type InstanceRepository interface {
 	FindInstance(ctx context.Context, id uuid.UUID) (domain.Instance, error)
 	// GetTeamInstances retrieves all instances for a given team ID.
 	GetTeamInstances(ctx context.Context, teamID uuid.UUID, includeDeleted bool) ([]domain.Instance, error)
+	// GetAllInstances retrieves all instances, including deleted ones.
+	GetAllInstances(ctx context.Context) ([]domain.Instance, error)
 }

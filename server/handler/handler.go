@@ -82,8 +82,8 @@ func (h *Handler) SetupRoutes(e *echo.Echo) {
 	teams.DELETE("/:teamID/environment", h.DeleteTeamEnvironment, h.TeamOrAdminAuthMiddleware())
 	teams.PATCH("/:teamID/environment", h.PatchTeamEnvironment, h.TeamOrAdminAuthMiddleware())
 
-	environments := api.Group("/environments", h.AuthMiddleware())
-	environments.GET("", h.GetEnvironments, h.AdminAuthMiddleware())
+	instances := api.Group("/instances", h.AuthMiddleware())
+	instances.GET("", h.GetInstances, h.AdminAuthMiddleware())
 
 	benchmarks := api.Group("/benchmarks", h.AuthMiddleware())
 	benchmarks.GET("", h.GetBenchmarks, h.AdminAuthMiddleware())

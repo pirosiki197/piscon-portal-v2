@@ -2103,9 +2103,9 @@ func (s *GetDocsOK) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
-// Encode encodes GetEnvironmentsOKApplicationJSON as json.
-func (s GetEnvironmentsOKApplicationJSON) Encode(e *jx.Encoder) {
-	unwrapped := []Environment(s)
+// Encode encodes GetInstancesOKApplicationJSON as json.
+func (s GetInstancesOKApplicationJSON) Encode(e *jx.Encoder) {
+	unwrapped := []Instance(s)
 
 	e.ArrStart()
 	for _, elem := range unwrapped {
@@ -2114,16 +2114,16 @@ func (s GetEnvironmentsOKApplicationJSON) Encode(e *jx.Encoder) {
 	e.ArrEnd()
 }
 
-// Decode decodes GetEnvironmentsOKApplicationJSON from json.
-func (s *GetEnvironmentsOKApplicationJSON) Decode(d *jx.Decoder) error {
+// Decode decodes GetInstancesOKApplicationJSON from json.
+func (s *GetInstancesOKApplicationJSON) Decode(d *jx.Decoder) error {
 	if s == nil {
-		return errors.New("invalid: unable to decode GetEnvironmentsOKApplicationJSON to nil")
+		return errors.New("invalid: unable to decode GetInstancesOKApplicationJSON to nil")
 	}
-	var unwrapped []Environment
+	var unwrapped []Instance
 	if err := func() error {
-		unwrapped = make([]Environment, 0)
+		unwrapped = make([]Instance, 0)
 		if err := d.Arr(func(d *jx.Decoder) error {
-			var elem Environment
+			var elem Instance
 			if err := elem.Decode(d); err != nil {
 				return err
 			}
@@ -2136,19 +2136,19 @@ func (s *GetEnvironmentsOKApplicationJSON) Decode(d *jx.Decoder) error {
 	}(); err != nil {
 		return errors.Wrap(err, "alias")
 	}
-	*s = GetEnvironmentsOKApplicationJSON(unwrapped)
+	*s = GetInstancesOKApplicationJSON(unwrapped)
 	return nil
 }
 
 // MarshalJSON implements stdjson.Marshaler.
-func (s GetEnvironmentsOKApplicationJSON) MarshalJSON() ([]byte, error) {
+func (s GetInstancesOKApplicationJSON) MarshalJSON() ([]byte, error) {
 	e := jx.Encoder{}
 	s.Encode(&e)
 	return e.Bytes(), nil
 }
 
 // UnmarshalJSON implements stdjson.Unmarshaler.
-func (s *GetEnvironmentsOKApplicationJSON) UnmarshalJSON(data []byte) error {
+func (s *GetInstancesOKApplicationJSON) UnmarshalJSON(data []byte) error {
 	d := jx.DecodeBytes(data)
 	return s.Decode(d)
 }

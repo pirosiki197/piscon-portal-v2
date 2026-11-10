@@ -42,6 +42,14 @@ func (r *Repository) GetTeamInstances(ctx context.Context, teamID uuid.UUID, inc
 	return toDomainInstances(instances)
 }
 
+func (r *Repository) GetAllInstances(ctx context.Context) ([]domain.Instance, error) {
+	instances, err := models.Instances.Query().All(ctx, r.executor(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("get all instances: %w", err)
+	}
+	return toDomainInstances(instances)
+}
+
 func toDomainInstances(instances models.InstanceSlice) ([]domain.Instance, error) {
 	result := make([]domain.Instance, 0, len(instances))
 	for _, inst := range instances {

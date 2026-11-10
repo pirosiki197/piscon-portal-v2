@@ -1016,7 +1016,7 @@ func (*Forbidden) deleteBenchmarkRes()        {}
 func (*Forbidden) deleteTeamEnvironmentRes()  {}
 func (*Forbidden) getBenchmarkResultRes()     {}
 func (*Forbidden) getBenchmarksRes()          {}
-func (*Forbidden) getEnvironmentsRes()        {}
+func (*Forbidden) getInstancesRes()           {}
 func (*Forbidden) getTeamBenchmarkResultRes() {}
 func (*Forbidden) getTeamBenchmarksRes()      {}
 func (*Forbidden) getTeamEnvironmentRes()     {}
@@ -1051,9 +1051,9 @@ func (s *GetDocsOK) SetBody(val OptMarkdownDocument) {
 
 func (*GetDocsOK) getDocsRes() {}
 
-type GetEnvironmentsOKApplicationJSON []Environment
+type GetInstancesOKApplicationJSON []Instance
 
-func (*GetEnvironmentsOKApplicationJSON) getEnvironmentsRes() {}
+func (*GetInstancesOKApplicationJSON) getInstancesRes() {}
 
 type GetOauth2CallbackBadRequest struct {
 	Message OptString `json:"message"`
@@ -1361,7 +1361,7 @@ func (*InternalServerError) getBenchmarkQueueRes()      {}
 func (*InternalServerError) getBenchmarkResultRes()     {}
 func (*InternalServerError) getBenchmarksRes()          {}
 func (*InternalServerError) getDocsRes()                {}
-func (*InternalServerError) getEnvironmentsRes()        {}
+func (*InternalServerError) getInstancesRes()           {}
 func (*InternalServerError) getMeRes()                  {}
 func (*InternalServerError) getOauth2CallbackRes()      {}
 func (*InternalServerError) getOauth2CodeRes()          {}
@@ -2506,7 +2506,7 @@ func (*Unauthorized) getBenchmarkQueueRes()      {}
 func (*Unauthorized) getBenchmarkResultRes()     {}
 func (*Unauthorized) getBenchmarksRes()          {}
 func (*Unauthorized) getDocsRes()                {}
-func (*Unauthorized) getEnvironmentsRes()        {}
+func (*Unauthorized) getInstancesRes()           {}
 func (*Unauthorized) getMeRes()                  {}
 func (*Unauthorized) getRankingRes()             {}
 func (*Unauthorized) getScoresRes()              {}

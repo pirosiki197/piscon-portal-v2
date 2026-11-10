@@ -403,23 +403,23 @@ paths:
         500:
           $ref: "#/components/responses/InternalServerError"
 
-  /environments:
+  /instances:
     get:
-      tags: ["environment"]
-      summary: "チーム環境一覧取得"
-      description: "削除されていないチーム環境の一覧を取得します (0件の場合も200で空配列が返ります)"
-      operationId: "getEnvironments"
+      tags: ["instance"]
+      summary: "インスタンス一覧取得"
+      description: "全インスタンス一覧を取得します。削除済みのインスタンスも含まれます (0件の場合も200で空配列が返ります)"
+      operationId: "getInstances"
       security:
         - AdminAuth: []
       responses:
         200:
-          description: "チーム環境一覧の取得に成功"
+          description: "インスタンス一覧の取得に成功。チームIDの昇順で返す"
           content:
             application/json:
               schema:
                 type: "array"
                 items:
-                  $ref: "#/components/schemas/Environment"
+                  $ref: "#/components/schemas/Instance"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:

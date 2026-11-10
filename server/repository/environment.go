@@ -17,8 +17,6 @@ type EnvironmentRepository interface {
 	FindEnvironment(ctx context.Context, id uuid.UUID) (domain.Environment, error)
 	// FindTeamEnvironment は、チームの削除されていないチーム環境を返す。なければ [ErrNotFound] を返す。
 	FindTeamEnvironment(ctx context.Context, teamID uuid.UUID) (domain.Environment, error)
-	// GetEnvironments は、削除されていないチーム環境をすべて返す。
-	GetEnvironments(ctx context.Context) ([]domain.Environment, error)
 	// CreateInstances は、チーム環境のサーバーを記録する。
 	// 同じチーム環境に同じ名前のサーバーがすでにあれば、そのサーバーは記録せずに無視する。
 	CreateInstances(ctx context.Context, instances []domain.Instance) error
