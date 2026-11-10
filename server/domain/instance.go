@@ -1,16 +1,18 @@
 package domain
 
 import (
-	"errors"
 	"time"
 
 	"github.com/google/uuid"
 )
 
+// Instance は、チーム環境の中の 1 台のサーバーである。
 type Instance struct {
-	ID        uuid.UUID
-	TeamID    uuid.UUID
-	Index     int
+	ID            uuid.UUID
+	TeamID        uuid.UUID
+	EnvironmentID uuid.UUID
+	// Name は、環境テンプレートでの論理 ID である。1 つのチーム環境の中で一意である。
+	Name      string
 	Infra     InfraInstance
 	CreatedAt time.Time
 	DeletedAt *time.Time
@@ -43,42 +45,3 @@ const (
 	InstanceOperationStart InstanceOperation = iota
 	InstanceOperationStop
 )
-
-type InstanceFactory struct {
-	limit int
-}
-
-var ErrInstanceLimitExceeded = errors.New("instance limit exceeded")
-
-func NewInstanceFactory(limit int) *InstanceFactory {
-	return &InstanceFactory{
-		limit: limit,
-	}
-}
-
-func (f *InstanceFactory) Create(teamID uuid.UUID, existing []Instance) (Instance, error) {
-	if len(existing) >= f.limit {
-		return Instance{}, ErrInstanceLimitExceeded
-	}
-	// use the next available index
-	used := make(map[int]struct{}, len(existing))
-	for _, instance := range existing {
-		used[instance.Index] = struct{}{}
-	}
-	var index int
-	for i := 1; i <= f.limit; i++ {
-		if _, ok := used[i]; !ok {
-			index = i
-			break
-		}
-	}
-
-	instance := Instance{
-		ID:        uuid.New(),
-		TeamID:    teamID,
-		Index:     index,
-		Infra:     InfraInstance{}, // initialize with empty InfraInstance
-		CreatedAt: time.Now(),
-	}
-	return instance, nil
-}

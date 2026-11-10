@@ -32,14 +32,30 @@ CREATE TABLE IF NOT EXISTS `sessions` (
     FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- チームに割り当てたサーバー一式。状態はプロバイダー（CloudFormation のスタック）から読む。
+CREATE TABLE IF NOT EXISTS `environments` (
+    `id` VARCHAR(36) NOT NULL,
+    `team_id` VARCHAR(36) NOT NULL,
+    `provider_environment_id` VARCHAR(255) NOT NULL,
+    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `deleted_at` TIMESTAMP NULL DEFAULT NULL,
+    -- 削除されていないチーム環境だけが値を持つ。一意制約で、チームごとに高々 1 つにする。
+    `active_team_id` VARCHAR(36) AS (IF(`deleted_at` IS NULL, `team_id`, NULL)) STORED,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`active_team_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `instances` (
     `id` VARCHAR(36) NOT NULL,
     `provider_instance_id` VARCHAR(255) NOT NULL,
     `team_id` VARCHAR(36) NOT NULL,
-    `instance_number` INT NOT NULL,
+    `environment_id` VARCHAR(36) NOT NULL,
+    `name` VARCHAR(255) NOT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `deleted_at` TIMESTAMP NULL DEFAULT NULL,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY (`environment_id`, `name`),
+    FOREIGN KEY (`environment_id`) REFERENCES `environments` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `benchmarks` (

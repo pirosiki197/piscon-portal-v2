@@ -42,12 +42,21 @@ type BenchmarkUseCase interface {
 }
 
 type benchmarkUseCaseImpl struct {
-	repo    repository.Repository
-	manager instance.Manager
+	repo        repository.Repository
+	syncer      environmentSyncer
+	manager     instance.Manager
+	benchTarget string
 }
 
-func NewBenchmarkUseCase(repo repository.Repository, manager instance.Manager) BenchmarkUseCase {
-	return &benchmarkUseCaseImpl{repo: repo, manager: manager}
+// NewBenchmarkUseCase は、benchTarget の名前のサーバーだけをベンチの対象にする BenchmarkUseCase を作る。
+// benchTarget が空なら、チーム環境のどのサーバーも対象にできる。
+func NewBenchmarkUseCase(repo repository.Repository, envManager instance.EnvironmentManager, manager instance.Manager, benchTarget string) BenchmarkUseCase {
+	return &benchmarkUseCaseImpl{
+		repo:        repo,
+		syncer:      environmentSyncer{repo: repo, envManager: envManager, manager: manager},
+		manager:     manager,
+		benchTarget: benchTarget,
+	}
 }
 
 func (u *benchmarkUseCaseImpl) GetBenchmark(ctx context.Context, id uuid.UUID) (domain.Benchmark, error) {
@@ -78,13 +87,21 @@ func (u *benchmarkUseCaseImpl) CreateBenchmark(ctx context.Context, instanceID u
 			return fmt.Errorf("find instance: %v", err)
 		}
 
-		infraInstance, err := u.manager.Get(ctx, instance.Infra.ProviderInstanceID)
+		env, err := u.repo.FindEnvironment(ctx, instance.EnvironmentID)
 		if err != nil {
-			return fmt.Errorf("get infra instance: %w", err)
+			return fmt.Errorf("find environment: %w", err)
 		}
-		instance.Infra = infraInstance
+		env, err = u.syncer.sync(ctx, env)
+		if err != nil {
+			return err
+		}
+		for _, inst := range env.Instances {
+			if inst.ID == instance.ID {
+				instance = inst
+			}
+		}
 
-		benchmark, err = domain.NewBenchmark(instance, user)
+		benchmark, err = domain.NewBenchmark(env, instance, user, u.benchTarget)
 		if err != nil {
 			return NewUseCaseError(err)
 		}

@@ -10,25 +10,33 @@ import (
 
 // Manager is an interface for managing infrastructure instances.
 type Manager interface {
-	// Create creates a new infrastructure instance with the given name and SSH public keys.
-	// Returns the provider instance ID or an error if the creation fails.
-	Create(ctx context.Context, name string, sshPubKeys []string) (string, error)
 	// Get retrieves an infrastructure instance by its provider ID.
 	// Returns the instance or an error if the retrieval fails.
 	Get(ctx context.Context, id string) (domain.InfraInstance, error)
-	// GetAll retrieves all infrastructure instances.
-	// Returns a slice of instances or an error if the retrieval fails.
-	GetAll(ctx context.Context) ([]domain.InfraInstance, error)
 	// GetByIDs retrieves infrastructure instances by their provider instance IDs.
-	// Returns a slice of instances or an error if the retrieval fails.
+	// Instances that no longer exist are not included.
 	GetByIDs(ctx context.Context, ids []string) ([]domain.InfraInstance, error)
-	// Update updates the infrastructure instance with the given provider ID.
-	// Returns the updated instance or an error if the update fails.
-	Delete(ctx context.Context, instance domain.InfraInstance) error
 	// Stop stops the infrastructure instance with the given provider ID.
 	// Returns an error if the stop operation fails.
 	Stop(ctx context.Context, instance domain.InfraInstance) error
 	// Start starts the infrastructure instance with the given provider ID.
 	// Returns an error if the start operation fails.
 	Start(ctx context.Context, instance domain.InfraInstance) error
+}
+
+// EnvironmentManager は、プロバイダーにチーム環境の作成と削除を依頼し、その状態を読む。
+type EnvironmentManager interface {
+	// Create は、name という名前でチーム環境の作成を依頼し、プロバイダーがチーム環境を識別する値を返す。
+	// 作成の完了は待たない。
+	Create(ctx context.Context, name string, params EnvironmentParams) (string, error)
+	// Get は、チーム環境の状態を返す。プロバイダーにチーム環境がなければ、状態は deleted になる。
+	Get(ctx context.Context, providerEnvironmentID string) (domain.InfraEnvironment, error)
+	// Delete は、チーム環境の削除を依頼する。削除の完了は待たない。
+	Delete(ctx context.Context, providerEnvironmentID string) error
+}
+
+// EnvironmentParams は、チーム環境ごとに変わる、テンプレートへの入力である。
+type EnvironmentParams struct {
+	TeamID        string
+	SSHPublicKeys []string
 }

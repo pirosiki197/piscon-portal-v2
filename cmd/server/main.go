@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
@@ -44,15 +43,11 @@ func main() {
 		},
 	}
 
-	useCaseConfig, err := provideUseCaseConfig()
-	if err != nil {
-		log.Fatal("failed to create use case config:", err)
-	}
 	problemBundle, err := provideBundle()
 	if err != nil {
 		log.Fatal("failed to load problem bundle:", err)
 	}
-	manager, err := provideInstanceManager(problemBundle)
+	manager, envManager, err := provideManagers(problemBundle)
 	if err != nil {
 		log.Fatal("failed to create instance manager:", err)
 	}
@@ -62,7 +57,7 @@ func main() {
 	}
 	githubService := github.NewHTTPGitHubService()
 
-	useCase := usecase.New(useCaseConfig, repo, manager, githubService)
+	useCase := usecase.New(provideUseCaseConfig(problemBundle), repo, manager, envManager, githubService)
 	handler, err := handler.New(useCase, repo, handlerConfig)
 	if err != nil {
 		panic(err)
@@ -100,16 +95,11 @@ func provideRepository() (repository.Repository, error) {
 	return dbrepo.NewRepository(db), nil
 }
 
-func provideUseCaseConfig() (usecase.Config, error) {
-	instanceLimit := 3 // default instance limit
-	if str := os.Getenv("INSTANCE_LIMIT"); str != "" {
-		var err error
-		instanceLimit, err = strconv.Atoi(str)
-		if err != nil {
-			return usecase.Config{}, fmt.Errorf("invalid INSTANCE_LIMIT: %w", err)
-		}
+func provideUseCaseConfig(problemBundle *bundle.Bundle) usecase.Config {
+	if problemBundle == nil {
+		return usecase.Config{}
 	}
-	return usecase.Config{InstanceLimit: instanceLimit}, nil
+	return usecase.Config{BenchTarget: problemBundle.Bench.Target}
 }
 
 // provideBundle は、PROBLEM_BUNDLE_DIR の問題バンドルを読み込む。
@@ -126,65 +116,71 @@ func provideBundle() (*bundle.Bundle, error) {
 	return &b, nil
 }
 
-func provideInstanceManager(problemBundle *bundle.Bundle) (instance.Manager, error) {
+func provideManagers(problemBundle *bundle.Bundle) (instance.Manager, instance.EnvironmentManager, error) {
 	manager := os.Getenv("INSTANCE_MANAGER")
 	if manager == "aws" {
-		imageID, err := awsImageID(problemBundle)
-		if err != nil {
-			return nil, err
-		}
-		return provideAWSInstanceManager(imageID)
+		return provideAWSManagers(problemBundle)
 	}
 	if manager == "" || manager == "mock" {
-		return provideFakeInstanceManager()
+		return provideFakeManagers(problemBundle)
 	}
-	return nil, fmt.Errorf("unknown INSTANCE_MANAGER: %s", manager)
+	return nil, nil, fmt.Errorf("unknown INSTANCE_MANAGER: %s", manager)
 }
 
-func provideFakeInstanceManager() (instance.Manager, error) {
+// defaultFakeServers は、問題バンドルを使わないときに fake のチーム環境が持つサーバーの名前である。
+var defaultFakeServers = []string{"Server1", "Server2", "Server3"}
+
+func provideFakeManagers(problemBundle *bundle.Bundle) (instance.Manager, instance.EnvironmentManager, error) {
 	root, err := os.OpenRoot("/app/.dev/instance")
 	if err != nil {
-		return nil, fmt.Errorf("open root directory: %w", err)
+		return nil, nil, fmt.Errorf("open root directory: %w", err)
 	}
 	manager, err := fake.NewManager(root)
 	if err != nil {
-		return nil, fmt.Errorf("create mock instance manager: %w", err)
+		return nil, nil, fmt.Errorf("create fake instance manager: %w", err)
 	}
-	return manager, nil
+	servers := defaultFakeServers
+	if problemBundle != nil {
+		servers = problemBundle.Environment.Servers
+	}
+	envManager, err := fake.NewEnvironmentManager(root, manager, servers)
+	if err != nil {
+		return nil, nil, fmt.Errorf("create fake environment manager: %w", err)
+	}
+	return manager, envManager, nil
 }
 
-// awsImageID は、問題サーバーの AMI ID を問題バンドルか AWS_IMAGE_ID から決める。
-// 2 か所で別の値を指定する事故を防ぐため、両方に指定があるときはエラーにする。
-func awsImageID(problemBundle *bundle.Bundle) (string, error) {
-	envImageID := os.Getenv("AWS_IMAGE_ID")
+func provideAWSManagers(problemBundle *bundle.Bundle) (instance.Manager, instance.EnvironmentManager, error) {
 	if problemBundle == nil {
-		return envImageID, nil
-	}
-	if envImageID != "" {
-		return "", errors.New("AWS_IMAGE_ID must not be set when PROBLEM_BUNDLE_DIR is set; write environment.imageId in the bundle instead")
+		return nil, nil, errors.New("PROBLEM_BUNDLE_DIR is required for INSTANCE_MANAGER=aws")
 	}
 	if problemBundle.Environment.ImageID == "" {
-		return "", fmt.Errorf("bundle %s has no environment.imageId", problemBundle.Name)
+		return nil, nil, fmt.Errorf("bundle %q has no environment.imageId", problemBundle.Name)
 	}
-	return problemBundle.Environment.ImageID, nil
-}
+	template, err := os.ReadFile(problemBundle.Environment.TemplatePath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("read environment template: %w", err)
+	}
 
-func provideAWSInstanceManager(imageID string) (instance.Manager, error) {
 	awsConfig := aws.Config{
-		ImageID:         imageID,
-		InstanceType:    os.Getenv("AWS_INSTANCE_TYPE"),
-		Region:          os.Getenv("AWS_REGION"),
-		AccessKey:       os.Getenv("AWS_ACCESS_KEY"),
-		SecretKey:       os.Getenv("AWS_SECRET_KEY"),
-		SubnetID:        os.Getenv("AWS_SUBNET_ID"),
-		SecurityGroupID: os.Getenv("AWS_SECURITY_GROUP_ID"),
-		KeyPairName:     os.Getenv("AWS_KEY_PAIR_NAME"),
+		Region:    os.Getenv("AWS_REGION"),
+		AccessKey: os.Getenv("AWS_ACCESS_KEY"),
+		SecretKey: os.Getenv("AWS_SECRET_KEY"),
 	}
 	manager, err := aws.NewClient(awsConfig)
 	if err != nil {
-		return nil, fmt.Errorf("create AWS instance manager: %w", err)
+		return nil, nil, fmt.Errorf("create AWS instance manager: %w", err)
 	}
-	return manager, nil
+	envManager, err := aws.NewEnvironmentClient(context.Background(), awsConfig, aws.EnvironmentConfig{
+		TemplateBody:    string(template),
+		ImageID:         problemBundle.Environment.ImageID,
+		SubnetID:        os.Getenv("AWS_SUBNET_ID"),
+		SecurityGroupID: os.Getenv("AWS_SECURITY_GROUP_ID"),
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("create AWS environment manager: %w", err)
+	}
+	return manager, envManager, nil
 }
 
 func setupAdminUser(repo repository.Repository) error {

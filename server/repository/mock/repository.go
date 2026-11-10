@@ -158,40 +158,78 @@ func (c *MockRepositoryCreateDocumentCall) DoAndReturn(f func(context.Context, u
 	return c
 }
 
-// CreateInstance mocks base method.
-func (m *MockRepository) CreateInstance(ctx context.Context, instance domain.Instance) error {
+// CreateEnvironment mocks base method.
+func (m *MockRepository) CreateEnvironment(ctx context.Context, env domain.Environment) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateInstance", ctx, instance)
+	ret := m.ctrl.Call(m, "CreateEnvironment", ctx, env)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CreateInstance indicates an expected call of CreateInstance.
-func (mr *MockRepositoryMockRecorder) CreateInstance(ctx, instance any) *MockRepositoryCreateInstanceCall {
+// CreateEnvironment indicates an expected call of CreateEnvironment.
+func (mr *MockRepositoryMockRecorder) CreateEnvironment(ctx, env any) *MockRepositoryCreateEnvironmentCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstance", reflect.TypeOf((*MockRepository)(nil).CreateInstance), ctx, instance)
-	return &MockRepositoryCreateInstanceCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEnvironment", reflect.TypeOf((*MockRepository)(nil).CreateEnvironment), ctx, env)
+	return &MockRepositoryCreateEnvironmentCall{Call: call}
 }
 
-// MockRepositoryCreateInstanceCall wrap *gomock.Call
-type MockRepositoryCreateInstanceCall struct {
+// MockRepositoryCreateEnvironmentCall wrap *gomock.Call
+type MockRepositoryCreateEnvironmentCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockRepositoryCreateInstanceCall) Return(arg0 error) *MockRepositoryCreateInstanceCall {
+func (c *MockRepositoryCreateEnvironmentCall) Return(arg0 error) *MockRepositoryCreateEnvironmentCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockRepositoryCreateInstanceCall) Do(f func(context.Context, domain.Instance) error) *MockRepositoryCreateInstanceCall {
+func (c *MockRepositoryCreateEnvironmentCall) Do(f func(context.Context, domain.Environment) error) *MockRepositoryCreateEnvironmentCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockRepositoryCreateInstanceCall) DoAndReturn(f func(context.Context, domain.Instance) error) *MockRepositoryCreateInstanceCall {
+func (c *MockRepositoryCreateEnvironmentCall) DoAndReturn(f func(context.Context, domain.Environment) error) *MockRepositoryCreateEnvironmentCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// CreateInstances mocks base method.
+func (m *MockRepository) CreateInstances(ctx context.Context, instances []domain.Instance) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateInstances", ctx, instances)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateInstances indicates an expected call of CreateInstances.
+func (mr *MockRepositoryMockRecorder) CreateInstances(ctx, instances any) *MockRepositoryCreateInstancesCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstances", reflect.TypeOf((*MockRepository)(nil).CreateInstances), ctx, instances)
+	return &MockRepositoryCreateInstancesCall{Call: call}
+}
+
+// MockRepositoryCreateInstancesCall wrap *gomock.Call
+type MockRepositoryCreateInstancesCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockRepositoryCreateInstancesCall) Return(arg0 error) *MockRepositoryCreateInstancesCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockRepositoryCreateInstancesCall) Do(f func(context.Context, []domain.Instance) error) *MockRepositoryCreateInstancesCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockRepositoryCreateInstancesCall) DoAndReturn(f func(context.Context, []domain.Instance) error) *MockRepositoryCreateInstancesCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -462,40 +500,40 @@ func (c *MockRepositoryDeleteBenchmarkLogsCall) DoAndReturn(f func(context.Conte
 	return c
 }
 
-// DeleteInstance mocks base method.
-func (m *MockRepository) DeleteInstance(ctx context.Context, id uuid.UUID) error {
+// DeleteEnvironment mocks base method.
+func (m *MockRepository) DeleteEnvironment(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteInstance", ctx, id)
+	ret := m.ctrl.Call(m, "DeleteEnvironment", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteInstance indicates an expected call of DeleteInstance.
-func (mr *MockRepositoryMockRecorder) DeleteInstance(ctx, id any) *MockRepositoryDeleteInstanceCall {
+// DeleteEnvironment indicates an expected call of DeleteEnvironment.
+func (mr *MockRepositoryMockRecorder) DeleteEnvironment(ctx, id any) *MockRepositoryDeleteEnvironmentCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteInstance", reflect.TypeOf((*MockRepository)(nil).DeleteInstance), ctx, id)
-	return &MockRepositoryDeleteInstanceCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEnvironment", reflect.TypeOf((*MockRepository)(nil).DeleteEnvironment), ctx, id)
+	return &MockRepositoryDeleteEnvironmentCall{Call: call}
 }
 
-// MockRepositoryDeleteInstanceCall wrap *gomock.Call
-type MockRepositoryDeleteInstanceCall struct {
+// MockRepositoryDeleteEnvironmentCall wrap *gomock.Call
+type MockRepositoryDeleteEnvironmentCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockRepositoryDeleteInstanceCall) Return(arg0 error) *MockRepositoryDeleteInstanceCall {
+func (c *MockRepositoryDeleteEnvironmentCall) Return(arg0 error) *MockRepositoryDeleteEnvironmentCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockRepositoryDeleteInstanceCall) Do(f func(context.Context, uuid.UUID) error) *MockRepositoryDeleteInstanceCall {
+func (c *MockRepositoryDeleteEnvironmentCall) Do(f func(context.Context, uuid.UUID) error) *MockRepositoryDeleteEnvironmentCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockRepositoryDeleteInstanceCall) DoAndReturn(f func(context.Context, uuid.UUID) error) *MockRepositoryDeleteInstanceCall {
+func (c *MockRepositoryDeleteEnvironmentCall) DoAndReturn(f func(context.Context, uuid.UUID) error) *MockRepositoryDeleteEnvironmentCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -573,6 +611,45 @@ func (c *MockRepositoryFindBenchmarkCall) Do(f func(context.Context, uuid.UUID) 
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockRepositoryFindBenchmarkCall) DoAndReturn(f func(context.Context, uuid.UUID) (domain.Benchmark, error)) *MockRepositoryFindBenchmarkCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FindEnvironment mocks base method.
+func (m *MockRepository) FindEnvironment(ctx context.Context, id uuid.UUID) (domain.Environment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEnvironment", ctx, id)
+	ret0, _ := ret[0].(domain.Environment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEnvironment indicates an expected call of FindEnvironment.
+func (mr *MockRepositoryMockRecorder) FindEnvironment(ctx, id any) *MockRepositoryFindEnvironmentCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEnvironment", reflect.TypeOf((*MockRepository)(nil).FindEnvironment), ctx, id)
+	return &MockRepositoryFindEnvironmentCall{Call: call}
+}
+
+// MockRepositoryFindEnvironmentCall wrap *gomock.Call
+type MockRepositoryFindEnvironmentCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockRepositoryFindEnvironmentCall) Return(arg0 domain.Environment, arg1 error) *MockRepositoryFindEnvironmentCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockRepositoryFindEnvironmentCall) Do(f func(context.Context, uuid.UUID) (domain.Environment, error)) *MockRepositoryFindEnvironmentCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockRepositoryFindEnvironmentCall) DoAndReturn(f func(context.Context, uuid.UUID) (domain.Environment, error)) *MockRepositoryFindEnvironmentCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -694,6 +771,45 @@ func (c *MockRepositoryFindTeamCall) DoAndReturn(f func(context.Context, uuid.UU
 	return c
 }
 
+// FindTeamEnvironment mocks base method.
+func (m *MockRepository) FindTeamEnvironment(ctx context.Context, teamID uuid.UUID) (domain.Environment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindTeamEnvironment", ctx, teamID)
+	ret0, _ := ret[0].(domain.Environment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindTeamEnvironment indicates an expected call of FindTeamEnvironment.
+func (mr *MockRepositoryMockRecorder) FindTeamEnvironment(ctx, teamID any) *MockRepositoryFindTeamEnvironmentCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindTeamEnvironment", reflect.TypeOf((*MockRepository)(nil).FindTeamEnvironment), ctx, teamID)
+	return &MockRepositoryFindTeamEnvironmentCall{Call: call}
+}
+
+// MockRepositoryFindTeamEnvironmentCall wrap *gomock.Call
+type MockRepositoryFindTeamEnvironmentCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockRepositoryFindTeamEnvironmentCall) Return(arg0 domain.Environment, arg1 error) *MockRepositoryFindTeamEnvironmentCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockRepositoryFindTeamEnvironmentCall) Do(f func(context.Context, uuid.UUID) (domain.Environment, error)) *MockRepositoryFindTeamEnvironmentCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockRepositoryFindTeamEnvironmentCall) DoAndReturn(f func(context.Context, uuid.UUID) (domain.Environment, error)) *MockRepositoryFindTeamEnvironmentCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // FindUser mocks base method.
 func (m *MockRepository) FindUser(ctx context.Context, id uuid.UUID) (domain.User, error) {
 	m.ctrl.T.Helper()
@@ -768,45 +884,6 @@ func (c *MockRepositoryGetAdminsCall) Do(f func(context.Context) ([]domain.User,
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockRepositoryGetAdminsCall) DoAndReturn(f func(context.Context) ([]domain.User, error)) *MockRepositoryGetAdminsCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
-// GetAllInstances mocks base method.
-func (m *MockRepository) GetAllInstances(ctx context.Context) ([]domain.Instance, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllInstances", ctx)
-	ret0, _ := ret[0].([]domain.Instance)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllInstances indicates an expected call of GetAllInstances.
-func (mr *MockRepositoryMockRecorder) GetAllInstances(ctx any) *MockRepositoryGetAllInstancesCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllInstances", reflect.TypeOf((*MockRepository)(nil).GetAllInstances), ctx)
-	return &MockRepositoryGetAllInstancesCall{Call: call}
-}
-
-// MockRepositoryGetAllInstancesCall wrap *gomock.Call
-type MockRepositoryGetAllInstancesCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockRepositoryGetAllInstancesCall) Return(arg0 []domain.Instance, arg1 error) *MockRepositoryGetAllInstancesCall {
-	c.Call = c.Call.Return(arg0, arg1)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockRepositoryGetAllInstancesCall) Do(f func(context.Context) ([]domain.Instance, error)) *MockRepositoryGetAllInstancesCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockRepositoryGetAllInstancesCall) DoAndReturn(f func(context.Context) ([]domain.Instance, error)) *MockRepositoryGetAllInstancesCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -924,6 +1001,45 @@ func (c *MockRepositoryGetDocumentCall) Do(f func(context.Context) (domain.Docum
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockRepositoryGetDocumentCall) DoAndReturn(f func(context.Context) (domain.Document, error)) *MockRepositoryGetDocumentCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// GetEnvironments mocks base method.
+func (m *MockRepository) GetEnvironments(ctx context.Context) ([]domain.Environment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEnvironments", ctx)
+	ret0, _ := ret[0].([]domain.Environment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEnvironments indicates an expected call of GetEnvironments.
+func (mr *MockRepositoryMockRecorder) GetEnvironments(ctx any) *MockRepositoryGetEnvironmentsCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEnvironments", reflect.TypeOf((*MockRepository)(nil).GetEnvironments), ctx)
+	return &MockRepositoryGetEnvironmentsCall{Call: call}
+}
+
+// MockRepositoryGetEnvironmentsCall wrap *gomock.Call
+type MockRepositoryGetEnvironmentsCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockRepositoryGetEnvironmentsCall) Return(arg0 []domain.Environment, arg1 error) *MockRepositoryGetEnvironmentsCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockRepositoryGetEnvironmentsCall) Do(f func(context.Context) ([]domain.Environment, error)) *MockRepositoryGetEnvironmentsCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockRepositoryGetEnvironmentsCall) DoAndReturn(f func(context.Context) ([]domain.Environment, error)) *MockRepositoryGetEnvironmentsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

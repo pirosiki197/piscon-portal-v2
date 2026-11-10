@@ -28,7 +28,8 @@ type Instance struct {
 	ID                 string              `db:"id,pk" `
 	ProviderInstanceID string              `db:"provider_instance_id" `
 	TeamID             string              `db:"team_id" `
-	InstanceNumber     int32               `db:"instance_number" `
+	EnvironmentID      string              `db:"environment_id" `
+	Name               string              `db:"name" `
 	CreatedAt          time.Time           `db:"created_at" `
 	DeletedAt          sql.Null[time.Time] `db:"deleted_at" `
 
@@ -42,14 +43,15 @@ type Instance struct {
 type InstanceSlice []*Instance
 
 // Instances contains methods to work with the instances table
-var Instances = mysql.NewTablex[*Instance, InstanceSlice, *InstanceSetter]("instances", buildInstanceColumns("instances"), instanceScanMapper, []string{"id"})
+var Instances = mysql.NewTablex[*Instance, InstanceSlice, *InstanceSetter]("instances", buildInstanceColumns("instances"), instanceScanMapper, []string{"id"}, []string{"environment_id", "name"})
 
 // InstancesQuery is a query on the instances table
 type InstancesQuery = *mysql.ViewQuery[*Instance, InstanceSlice]
 
 // instanceR is where relationships are stored.
 type instanceR struct {
-	Benchmarks BenchmarkSlice // benchmarks_ibfk_1
+	Benchmarks  BenchmarkSlice // benchmarks_ibfk_1
+	Environment *Environment   // instances_ibfk_1
 	// Loaded reports whether each relationship has been loaded.
 	// A relationship's bool is set by Load*, Preload, ThenLoad, factory builds,
 	// and to-one Attach/Insert operations. To-many Attach/Insert operations leave it unchanged.
@@ -58,12 +60,13 @@ type instanceR struct {
 
 // instanceRLoaded tracks which relationships on Instance have been loaded.
 type instanceRLoaded struct {
-	Benchmarks bool // benchmarks_ibfk_1
+	Benchmarks  bool // benchmarks_ibfk_1
+	Environment bool // instances_ibfk_1
 }
 
 func buildInstanceColumns(tableName string) instanceColumns {
 	columnsExpr := expr.NewColumnsExpr(
-		"id", "provider_instance_id", "team_id", "instance_number", "created_at", "deleted_at",
+		"id", "provider_instance_id", "team_id", "environment_id", "name", "created_at", "deleted_at",
 	)
 
 	if tableName != "" {
@@ -76,7 +79,8 @@ func buildInstanceColumns(tableName string) instanceColumns {
 		ID:                 buildInstanceColumn(tableName, "id"),
 		ProviderInstanceID: buildInstanceColumn(tableName, "provider_instance_id"),
 		TeamID:             buildInstanceColumn(tableName, "team_id"),
-		InstanceNumber:     buildInstanceColumn(tableName, "instance_number"),
+		EnvironmentID:      buildInstanceColumn(tableName, "environment_id"),
+		Name:               buildInstanceColumn(tableName, "name"),
 		CreatedAt:          buildInstanceColumn(tableName, "created_at"),
 		DeletedAt:          buildInstanceColumn(tableName, "deleted_at"),
 	}
@@ -88,7 +92,8 @@ type instanceColumns struct {
 	ID                 instanceColumn
 	ProviderInstanceID instanceColumn
 	TeamID             instanceColumn
-	InstanceNumber     instanceColumn
+	EnvironmentID      instanceColumn
+	Name               instanceColumn
 	CreatedAt          instanceColumn
 	DeletedAt          instanceColumn
 }
@@ -139,13 +144,14 @@ type InstanceSetter struct {
 	ID                 *string              `db:"id,pk" `
 	ProviderInstanceID *string              `db:"provider_instance_id" `
 	TeamID             *string              `db:"team_id" `
-	InstanceNumber     *int32               `db:"instance_number" `
+	EnvironmentID      *string              `db:"environment_id" `
+	Name               *string              `db:"name" `
 	CreatedAt          *time.Time           `db:"created_at" `
 	DeletedAt          *sql.Null[time.Time] `db:"deleted_at" `
 }
 
 func (s InstanceSetter) SetColumns() []string {
-	vals := make([]string, 0, 6)
+	vals := make([]string, 0, 7)
 	if s.ID != nil {
 		vals = append(vals, "id")
 	}
@@ -155,8 +161,11 @@ func (s InstanceSetter) SetColumns() []string {
 	if s.TeamID != nil {
 		vals = append(vals, "team_id")
 	}
-	if s.InstanceNumber != nil {
-		vals = append(vals, "instance_number")
+	if s.EnvironmentID != nil {
+		vals = append(vals, "environment_id")
+	}
+	if s.Name != nil {
+		vals = append(vals, "name")
 	}
 	if s.CreatedAt != nil {
 		vals = append(vals, "created_at")
@@ -192,12 +201,20 @@ func (s InstanceSetter) Overwrite(t *Instance) {
 			return *s.TeamID
 		}()
 	}
-	if s.InstanceNumber != nil {
-		t.InstanceNumber = func() int32 {
-			if s.InstanceNumber == nil {
-				return *new(int32)
+	if s.EnvironmentID != nil {
+		t.EnvironmentID = func() string {
+			if s.EnvironmentID == nil {
+				return *new(string)
 			}
-			return *s.InstanceNumber
+			return *s.EnvironmentID
+		}()
+	}
+	if s.Name != nil {
+		t.Name = func() string {
+			if s.Name == nil {
+				return *new(string)
+			}
+			return *s.Name
 		}()
 	}
 	if s.CreatedAt != nil {
@@ -256,14 +273,24 @@ func (s *InstanceSetter) Apply(q *dialect.InsertQuery) {
 				return *s.TeamID
 			}()).WriteSQL(ctx, w, d, start)
 		}), bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-			if s.InstanceNumber == nil {
+			if s.EnvironmentID == nil {
 				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
 			}
-			return mysql.Arg(func() int32 {
-				if s.InstanceNumber == nil {
-					return *new(int32)
+			return mysql.Arg(func() string {
+				if s.EnvironmentID == nil {
+					return *new(string)
 				}
-				return *s.InstanceNumber
+				return *s.EnvironmentID
+			}()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
+			if s.Name == nil {
+				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return mysql.Arg(func() string {
+				if s.Name == nil {
+					return *new(string)
+				}
+				return *s.Name
 			}()).WriteSQL(ctx, w, d, start)
 		}), bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
 			if s.CreatedAt == nil {
@@ -294,7 +321,7 @@ func (s InstanceSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s InstanceSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 6)
+	exprs := make([]bob.Expression, 0, 7)
 
 	if s.ID != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -317,10 +344,17 @@ func (s InstanceSetter) Expressions(prefix ...string) []bob.Expression {
 		}})
 	}
 
-	if s.InstanceNumber != nil {
+	if s.EnvironmentID != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
-			mysql.Quote(append(prefix, "instance_number")...),
-			mysql.Arg(s.InstanceNumber),
+			mysql.Quote(append(prefix, "environment_id")...),
+			mysql.Arg(s.EnvironmentID),
+		}})
+	}
+
+	if s.Name != nil {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			mysql.Quote(append(prefix, "name")...),
+			mysql.Arg(s.Name),
 		}})
 	}
 
@@ -348,7 +382,7 @@ func instanceScanMapper(ctx context.Context, cols []string) (scan.BeforeFunc, fu
 		idx int
 		dst func(o *Instance) any
 	}
-	targets := make([]target, 0, 6)
+	targets := make([]target, 0, 7)
 	for i, col := range cols {
 		switch col {
 		case "id":
@@ -357,8 +391,10 @@ func instanceScanMapper(ctx context.Context, cols []string) (scan.BeforeFunc, fu
 			targets = append(targets, target{i, func(o *Instance) any { return &o.ProviderInstanceID }})
 		case "team_id":
 			targets = append(targets, target{i, func(o *Instance) any { return &o.TeamID }})
-		case "instance_number":
-			targets = append(targets, target{i, func(o *Instance) any { return &o.InstanceNumber }})
+		case "environment_id":
+			targets = append(targets, target{i, func(o *Instance) any { return &o.EnvironmentID }})
+		case "name":
+			targets = append(targets, target{i, func(o *Instance) any { return &o.Name }})
 		case "created_at":
 			targets = append(targets, target{i, func(o *Instance) any { return &o.CreatedAt }})
 		case "deleted_at":
@@ -627,6 +663,25 @@ func (os InstanceSlice) Benchmarks(mods ...bob.Mod[*dialect.SelectQuery]) Benchm
 	)...)
 }
 
+// Environment starts a query for related objects on environments
+func (o *Instance) Environment(mods ...bob.Mod[*dialect.SelectQuery]) EnvironmentsQuery {
+	return Environments.Query(append(mods,
+		sm.Where(Environments.Columns.ID.EQ(mysql.Arg(o.EnvironmentID))),
+	)...)
+}
+
+func (os InstanceSlice) Environment(mods ...bob.Mod[*dialect.SelectQuery]) EnvironmentsQuery {
+	PKArgSlice := make([]bob.Expression, len(os))
+	for i, o := range os {
+		PKArgSlice[i] = mysql.ArgGroup(o.EnvironmentID)
+	}
+	PKArgExpr := mysql.Group(PKArgSlice...)
+
+	return Environments.Query(append(mods,
+		sm.Where(mysql.Group(Environments.Columns.ID).OP("IN", PKArgExpr)),
+	)...)
+}
+
 func insertInstanceBenchmarks0(ctx context.Context, exec bob.Executor, benchmarks1 []*BenchmarkSetter, instance0 *Instance) (BenchmarkSlice, error) {
 	for i := range benchmarks1 {
 		benchmarks1[i].InstanceID = func() *string { return &instance0.ID }()
@@ -697,12 +752,63 @@ func (instance0 *Instance) AttachBenchmarks(ctx context.Context, exec bob.Execut
 	return nil
 }
 
+func attachInstanceEnvironment0(ctx context.Context, exec bob.Executor, count int, instance0 *Instance, environment1 *Environment) (*Instance, error) {
+	setter := &InstanceSetter{
+		EnvironmentID: func() *string { return &environment1.ID }(),
+	}
+
+	err := instance0.Update(ctx, exec, setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachInstanceEnvironment0: %w", err)
+	}
+
+	return instance0, nil
+}
+
+func (instance0 *Instance) InsertEnvironment(ctx context.Context, exec bob.Executor, related *EnvironmentSetter) error {
+	var err error
+
+	environment1, err := Environments.Insert(related).One(ctx, exec)
+	if err != nil {
+		return fmt.Errorf("inserting related objects: %w", err)
+	}
+
+	_, err = attachInstanceEnvironment0(ctx, exec, 1, instance0, environment1)
+	if err != nil {
+		return err
+	}
+
+	instance0.R.Environment = environment1
+	instance0.R.Loaded.Environment = true
+
+	environment1.R.Instances = append(environment1.R.Instances, instance0)
+
+	return nil
+}
+
+func (instance0 *Instance) AttachEnvironment(ctx context.Context, exec bob.Executor, environment1 *Environment) error {
+	var err error
+
+	_, err = attachInstanceEnvironment0(ctx, exec, 1, instance0, environment1)
+	if err != nil {
+		return err
+	}
+
+	instance0.R.Environment = environment1
+	instance0.R.Loaded.Environment = true
+
+	environment1.R.Instances = append(environment1.R.Instances, instance0)
+
+	return nil
+}
+
 type instanceWhere[Q mysql.Filterable] struct {
 	cols               instanceColumns
 	ID                 mysql.WhereMod[Q, string]
 	ProviderInstanceID mysql.WhereMod[Q, string]
 	TeamID             mysql.WhereMod[Q, string]
-	InstanceNumber     mysql.WhereMod[Q, int32]
+	EnvironmentID      mysql.WhereMod[Q, string]
+	Name               mysql.WhereMod[Q, string]
 	CreatedAt          mysql.WhereMod[Q, time.Time]
 	DeletedAt          mysql.WhereNullMod[Q, time.Time]
 	R                  instanceWhereR[Q]
@@ -718,7 +824,8 @@ func buildInstanceWhere[Q mysql.Filterable](cols instanceColumns) instanceWhere[
 		ID:                 mysql.Where[Q, string](cols.ID.Expression),
 		ProviderInstanceID: mysql.Where[Q, string](cols.ProviderInstanceID.Expression),
 		TeamID:             mysql.Where[Q, string](cols.TeamID.Expression),
-		InstanceNumber:     mysql.Where[Q, int32](cols.InstanceNumber.Expression),
+		EnvironmentID:      mysql.Where[Q, string](cols.EnvironmentID.Expression),
+		Name:               mysql.Where[Q, string](cols.Name.Expression),
 		CreatedAt:          mysql.Where[Q, time.Time](cols.CreatedAt.Expression),
 		DeletedAt:          mysql.WhereNull[Q, time.Time](cols.DeletedAt.Expression),
 		R:                  instanceWhereR[Q]{cols: cols},
@@ -746,6 +853,20 @@ func (w instanceWhereR[Q]) HasBenchmarks(filters ...bob.Mod[*dialect.SelectQuery
 	return mods.Where[Q]{E: mysql.Exists(q)}
 }
 
+// HasEnvironment filters parents that have a matching Environment using a
+// correlated EXISTS subquery (semi-join). Unlike an INNER JOIN it does not
+// multiply parent rows, so no DISTINCT is needed. The optional filters are
+// applied to the subquery (i.e. to Environments).
+func (w instanceWhereR[Q]) HasEnvironment(filters ...bob.Mod[*dialect.SelectQuery]) mods.Where[Q] {
+	q := mysql.Select(
+		sm.Columns(mysql.Raw("1")),
+		sm.From(Environments.NameExpr()),
+		sm.Where(Environments.Columns.ID.EQ(w.cols.EnvironmentID)),
+	)
+	q.Apply(filters...)
+	return mods.Where[Q]{E: mysql.Exists(q)}
+}
+
 // NULL-tolerant scan buffer for instanceScanMapperNullable:
 // on a LEFT JOIN miss every column comes back NULL, so each field uses the
 // nullable version of the column type even when the column itself is NOT NULL.
@@ -753,7 +874,8 @@ type instancePreloadBuf struct {
 	ID                 sql.Null[string]
 	ProviderInstanceID sql.Null[string]
 	TeamID             sql.Null[string]
-	InstanceNumber     sql.Null[int32]
+	EnvironmentID      sql.Null[string]
+	Name               sql.Null[string]
 	CreatedAt          sql.Null[time.Time]
 	DeletedAt          sql.Null[time.Time]
 }
@@ -770,7 +892,7 @@ func instanceScanMapperNullable(prefix string) scan.Mapper[*Instance] {
 			idx int
 			dst func(b *instancePreloadBuf) any
 		}
-		targets := make([]target, 0, 6)
+		targets := make([]target, 0, 7)
 		for i, col := range cols {
 			name, ok := strings.CutPrefix(col, prefix)
 			if !ok {
@@ -783,8 +905,10 @@ func instanceScanMapperNullable(prefix string) scan.Mapper[*Instance] {
 				targets = append(targets, target{i, func(b *instancePreloadBuf) any { return &b.ProviderInstanceID }})
 			case "team_id":
 				targets = append(targets, target{i, func(b *instancePreloadBuf) any { return &b.TeamID }})
-			case "instance_number":
-				targets = append(targets, target{i, func(b *instancePreloadBuf) any { return &b.InstanceNumber }})
+			case "environment_id":
+				targets = append(targets, target{i, func(b *instancePreloadBuf) any { return &b.EnvironmentID }})
+			case "name":
+				targets = append(targets, target{i, func(b *instancePreloadBuf) any { return &b.Name }})
 			case "created_at":
 				targets = append(targets, target{i, func(b *instancePreloadBuf) any { return &b.CreatedAt }})
 			case "deleted_at":
@@ -814,7 +938,8 @@ func instanceScanMapperNullable(prefix string) scan.Mapper[*Instance] {
 				if !(buf.ID.Valid) &&
 					!(buf.ProviderInstanceID.Valid) &&
 					!(buf.TeamID.Valid) &&
-					!(buf.InstanceNumber.Valid) &&
+					!(buf.EnvironmentID.Valid) &&
+					!(buf.Name.Valid) &&
 					!(buf.CreatedAt.Valid) &&
 					!(buf.DeletedAt.Valid) {
 					return nil, nil
@@ -830,8 +955,11 @@ func instanceScanMapperNullable(prefix string) scan.Mapper[*Instance] {
 				if buf.TeamID.Valid {
 					o.TeamID = buf.TeamID.V
 				}
-				if buf.InstanceNumber.Valid {
-					o.InstanceNumber = buf.InstanceNumber.V
+				if buf.EnvironmentID.Valid {
+					o.EnvironmentID = buf.EnvironmentID.V
+				}
+				if buf.Name.Valid {
+					o.Name = buf.Name.V
 				}
 				if buf.CreatedAt.Valid {
 					o.CreatedAt = buf.CreatedAt.V
@@ -864,24 +992,57 @@ func (o *Instance) Preload(name string, retrieved any) error {
 			}
 		}
 		return nil
+	case "Environment":
+		rel, ok := retrieved.(*Environment)
+		if !ok {
+			return fmt.Errorf("instance cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Environment = rel
+		o.R.Loaded.Environment = true
+
+		if rel != nil {
+			rel.R.Instances = InstanceSlice{o}
+		}
+		return nil
 	default:
 		return fmt.Errorf("instance has no relationship %q", name)
 	}
 }
 
-type instancePreloader struct{}
+type instancePreloader struct {
+	Environment func(...mysql.PreloadOption) mysql.Preloader
+}
 
 func buildInstancePreloader() instancePreloader {
-	return instancePreloader{}
+	return instancePreloader{
+		Environment: func(opts ...mysql.PreloadOption) mysql.Preloader {
+			return mysql.Preload[*Environment, EnvironmentSlice](mysql.PreloadRel{
+				Name: "Environment",
+				Sides: []mysql.PreloadSide{
+					{
+						From:        Instances,
+						To:          Environments,
+						FromColumns: []string{"environment_id"},
+						ToColumns:   []string{"id"},
+					},
+				},
+			}, Environments.Columns.Names(), environmentScanMapperNullable, opts...)
+		},
+	}
 }
 
 type instanceThenLoader[Q orm.Loadable] struct {
-	Benchmarks func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Benchmarks  func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Environment func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildInstanceThenLoader[Q orm.Loadable]() instanceThenLoader[Q] {
 	type BenchmarksLoadInterface interface {
 		LoadBenchmarks(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+	type EnvironmentLoadInterface interface {
+		LoadEnvironment(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return instanceThenLoader[Q]{
@@ -889,6 +1050,12 @@ func buildInstanceThenLoader[Q orm.Loadable]() instanceThenLoader[Q] {
 			"Benchmarks",
 			func(ctx context.Context, exec bob.Executor, retrieved BenchmarksLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
 				return retrieved.LoadBenchmarks(ctx, exec, mods...)
+			},
+		),
+		Environment: thenLoadBuilder[Q](
+			"Environment",
+			func(ctx context.Context, exec bob.Executor, retrieved EnvironmentLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadEnvironment(ctx, exec, mods...)
 			},
 		),
 	}
@@ -961,6 +1128,81 @@ func (os InstanceSlice) LoadBenchmarks(ctx context.Context, exec bob.Executor, m
 			rel.R.Loaded.Instance = true
 
 			o.R.Benchmarks = append(o.R.Benchmarks, rel)
+
+		}
+	}
+
+	return nil
+}
+
+// LoadEnvironment loads the instance's Environment into the .R struct
+func (o *Instance) LoadEnvironment(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Environment = nil
+	o.R.Loaded.Environment = false
+
+	related, err := o.Environment(mods...).One(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	related.R.Instances = InstanceSlice{o}
+
+	o.R.Environment = related
+	o.R.Loaded.Environment = true
+	return nil
+}
+
+// LoadEnvironment loads the instance's Environment into the .R struct
+func (os InstanceSlice) LoadEnvironment(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	environments, err := os.Environment(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.Environment = nil
+		o.R.Loaded.Environment = true
+	}
+	// O(N+M) stitch via a map keyed by the join column (key -> []parent; was O(N*M)).
+	instanceByKey := make(map[string][]*Instance, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		instanceByKey[o.EnvironmentID] = append(instanceByKey[o.EnvironmentID], o)
+	}
+
+	for _, rel := range environments {
+
+		owners, ok := instanceByKey[rel.ID]
+		if !ok {
+			continue
+		}
+
+		for _, o := range owners {
+
+			// to-one: keep only the first matching child (matches the previous break)
+			if o.R.Environment != nil {
+				continue
+			}
+
+			rel.R.Instances = append(rel.R.Instances, o)
+
+			o.R.Environment = rel
 
 		}
 	}
@@ -1110,8 +1352,9 @@ func (os InstanceSlice) LoadCountBenchmarks(ctx context.Context, exec bob.Execut
 }
 
 type instanceJoins[Q dialect.Joinable] struct {
-	typ        string
-	Benchmarks modAs[Q, benchmarkColumns]
+	typ         string
+	Benchmarks  modAs[Q, benchmarkColumns]
+	Environment modAs[Q, environmentColumns]
 }
 
 func (j instanceJoins[Q]) aliasedAs(alias string) instanceJoins[Q] {
@@ -1129,6 +1372,20 @@ func buildInstanceJoins[Q dialect.Joinable](cols instanceColumns, typ string) in
 				{
 					mods = append(mods, dialect.Join[Q](typ, Benchmarks.NameExpr().As(to.Alias())).On(
 						to.InstanceID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
+		Environment: modAs[Q, environmentColumns]{
+			c: Environments.Columns,
+			f: func(to environmentColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Environments.NameExpr().As(to.Alias())).On(
+						to.ID.EQ(cols.EnvironmentID),
 					))
 				}
 

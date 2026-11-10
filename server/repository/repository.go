@@ -16,10 +16,12 @@ type Repository interface {
 	TeamRepository
 	BenchmarkRepository
 	InstanceRepository
+	EnvironmentRepository
 	DocumentRepository
 	ProblemRepository
 }
 
 var (
-	ErrNotFound = errors.New("not found")
+	ErrNotFound      = errors.New("not found")
+	ErrAlreadyExists = errors.New("already exists")
 )

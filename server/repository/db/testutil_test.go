@@ -3,10 +3,12 @@ package db_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/samber/lo"
 	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/mysql/im"
 	"github.com/stretchr/testify/require"
 	"github.com/traPtitech/piscon-portal-v2/server/domain"
 	"github.com/traPtitech/piscon-portal-v2/server/repository/db"
@@ -34,13 +36,25 @@ func mustMakeTeam(t *testing.T, executor bob.Executor, team domain.Team) {
 	require.NoError(t, err)
 }
 
+// mustMakeInstance は、instance を記録する。instance のチーム環境がなければ、削除済みのチーム環境として作る。
+// Name が空なら、ID を名前にする。
 func mustMakeInstance(t *testing.T, executor bob.Executor, instance domain.Instance) {
 	t.Helper()
-	_, err := models.Instances.Insert(&models.InstanceSetter{
+	_, err := models.Environments.Insert(&models.EnvironmentSetter{
+		ID:                    lo.ToPtr(instance.EnvironmentID.String()),
+		TeamID:                lo.ToPtr(instance.TeamID.String()),
+		ProviderEnvironmentID: lo.ToPtr("stack-" + instance.EnvironmentID.String()),
+		DeletedAt:             db.ToSQLNull(time.Now()),
+	}, im.Ignore()).Exec(context.Background(), executor)
+	require.NoError(t, err)
+
+	name := lo.Ternary(instance.Name != "", instance.Name, instance.ID.String())
+	_, err = models.Instances.Insert(&models.InstanceSetter{
 		ID:                 lo.ToPtr(instance.ID.String()),
 		ProviderInstanceID: lo.ToPtr(instance.Infra.ProviderInstanceID),
 		TeamID:             lo.ToPtr(instance.TeamID.String()),
-		InstanceNumber:     lo.ToPtr(int32(instance.Index)),
+		EnvironmentID:      lo.ToPtr(instance.EnvironmentID.String()),
+		Name:               lo.ToPtr(name),
 		DeletedAt:          db.PtrToSQLNull(instance.DeletedAt),
 	}).Exec(context.Background(), executor)
 	require.NoError(t, err)

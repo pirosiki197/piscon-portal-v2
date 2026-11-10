@@ -23,184 +23,102 @@ func TestCreateBenchmark(t *testing.T) {
 
 	userID := uuid.New()
 	teamID := uuid.New()
+	envID := uuid.New()
 	instanceID := uuid.New()
-	providerInstanceID := "instance-id"
 
-	tests := []struct {
-		name        string
-		setup       func(mockRepo *mock.MockRepository, mockManager *instanceMock.MockManager)
-		expectError bool
+	tests := map[string]struct {
+		instanceTeamID uuid.UUID
+		instanceName   string
+		envStatus      domain.EnvironmentStatus
+		instanceStatus domain.InstanceStatus
+		benchTarget    string
+		queued         []domain.Benchmark
+		expectError    bool
 	}{
-		{
-			name: "success: valid",
-			setup: func(mockRepo *mock.MockRepository, mockManager *instanceMock.MockManager) {
-				mockRepo.EXPECT().
-					FindUser(gomock.Any(), gomock.Eq(userID)).
-					Return(domain.User{
-						ID:     userID,
-						TeamID: uuid.NullUUID{Valid: true, UUID: teamID},
-					}, nil)
-				mockRepo.EXPECT().
-					FindInstance(gomock.Any(), gomock.Eq(instanceID)).
-					Return(domain.Instance{
-						ID:     instanceID,
-						TeamID: teamID,
-						Infra: domain.InfraInstance{
-							ProviderInstanceID: providerInstanceID,
-						},
-					}, nil)
-				mockManager.EXPECT().Get(gomock.Any(), providerInstanceID).Return(domain.InfraInstance{
-					ProviderInstanceID: providerInstanceID,
-					Status:             domain.InstanceStatusRunning,
-					PrivateIP:          ptr.Of("private ip"),
-					PublicIP:           ptr.Of("public ip"),
-				}, nil)
-				mockRepo.EXPECT().
-					Transaction(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, f func(context.Context) error) error {
-						return f(ctx)
-					})
-				mockRepo.EXPECT().
-					GetBenchmarks(gomock.Any(), gomock.Any()).
-					Return([]domain.Benchmark{}, nil)
-				mockRepo.EXPECT().CreateBenchmark(gomock.Any(), gomock.Any()).Return(nil)
-			},
-			expectError: false,
+		"success": {
+			envStatus:      domain.EnvironmentStatusReady,
+			instanceStatus: domain.InstanceStatusRunning,
 		},
-		{
-			name: "failure: instance is not running",
-			setup: func(mockRepo *mock.MockRepository, mockManager *instanceMock.MockManager) {
-				mockRepo.EXPECT().
-					Transaction(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, f func(context.Context) error) error {
-						return f(ctx)
-					})
-				mockRepo.EXPECT().
-					FindUser(gomock.Any(), gomock.Eq(userID)).
-					Return(domain.User{
-						ID:     userID,
-						TeamID: uuid.NullUUID{Valid: true, UUID: teamID},
-					}, nil)
-				mockRepo.EXPECT().
-					FindInstance(gomock.Any(), gomock.Eq(instanceID)).
-					Return(domain.Instance{
-						ID:     instanceID,
-						TeamID: teamID,
-						Infra: domain.InfraInstance{
-							ProviderInstanceID: providerInstanceID,
-						},
-					}, nil)
-				mockManager.EXPECT().Get(gomock.Any(), providerInstanceID).Return(domain.InfraInstance{
-					ProviderInstanceID: providerInstanceID,
-					Status:             domain.InstanceStatusBuilding,
-				}, nil)
-			},
-			expectError: true,
+		"success: target is the fixed server": {
+			instanceName:   "Router",
+			envStatus:      domain.EnvironmentStatusReady,
+			instanceStatus: domain.InstanceStatusRunning,
+			benchTarget:    "Router",
 		},
-		{
-			name: "failure: instance not found",
-			setup: func(mockRepo *mock.MockRepository, _ *instanceMock.MockManager) {
-				mockRepo.EXPECT().
-					Transaction(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, f func(context.Context) error) error {
-						return f(ctx)
-					})
-				mockRepo.EXPECT().
-					FindUser(gomock.Any(), gomock.Eq(userID)).
-					Return(domain.User{
-						ID:     userID,
-						TeamID: uuid.NullUUID{Valid: true, UUID: teamID},
-					}, nil)
-				mockRepo.EXPECT().
-					FindInstance(gomock.Any(), gomock.Eq(instanceID)).
-					Return(domain.Instance{}, repository.ErrNotFound)
-			},
-			expectError: true,
+		"failure: target is not the fixed server": {
+			instanceName:   "Webapp",
+			envStatus:      domain.EnvironmentStatusReady,
+			instanceStatus: domain.InstanceStatusRunning,
+			benchTarget:    "Router",
+			expectError:    true,
 		},
-		{
-			name: "failure: user's teamID does not match instance's teamID",
-			setup: func(mockRepo *mock.MockRepository, mockManager *instanceMock.MockManager) {
-				mockRepo.EXPECT().
-					Transaction(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, f func(context.Context) error) error {
-						return f(ctx)
-					})
-				mockRepo.EXPECT().
-					FindUser(gomock.Any(), gomock.Eq(userID)).
-					Return(domain.User{
-						ID:     userID,
-						TeamID: uuid.NullUUID{Valid: true, UUID: teamID},
-					}, nil)
-				mockRepo.EXPECT().
-					FindInstance(gomock.Any(), gomock.Eq(instanceID)).
-					Return(domain.Instance{
-						ID:     instanceID,
-						TeamID: uuid.New(),
-						Infra: domain.InfraInstance{
-							ProviderInstanceID: providerInstanceID,
-						},
-					}, nil)
-				mockManager.EXPECT().Get(gomock.Any(), providerInstanceID).Return(domain.InfraInstance{
-					ProviderInstanceID: providerInstanceID,
-					Status:             domain.InstanceStatusRunning,
-					PrivateIP:          ptr.Of("private ip"),
-					PublicIP:           ptr.Of("public ip"),
-				}, nil)
-			},
-			expectError: true,
+		"failure: environment is deleting": {
+			envStatus:      domain.EnvironmentStatusDeleting,
+			instanceStatus: domain.InstanceStatusRunning,
+			expectError:    true,
 		},
-		{
-			name: "failure: benchmark already queued",
-			setup: func(mockRepo *mock.MockRepository, mockManager *instanceMock.MockManager) {
-				mockRepo.EXPECT().
-					FindUser(gomock.Any(), gomock.Eq(userID)).
-					Return(domain.User{
-						ID:     userID,
-						TeamID: uuid.NullUUID{Valid: true, UUID: teamID},
-					}, nil)
-				mockRepo.EXPECT().
-					FindInstance(gomock.Any(), gomock.Eq(instanceID)).
-					Return(domain.Instance{
-						ID:     instanceID,
-						TeamID: teamID,
-						Infra: domain.InfraInstance{
-							ProviderInstanceID: providerInstanceID,
-						},
-					}, nil)
-				mockManager.EXPECT().Get(gomock.Any(), providerInstanceID).Return(domain.InfraInstance{
-					ProviderInstanceID: providerInstanceID,
-					Status:             domain.InstanceStatusRunning,
-					PrivateIP:          ptr.Of("private ip"),
-					PublicIP:           ptr.Of("public ip"),
-				}, nil)
-				mockRepo.EXPECT().
-					Transaction(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, f func(context.Context) error) error {
-						return f(ctx)
-					})
-				mockRepo.EXPECT().
-					GetBenchmarks(gomock.Any(), gomock.Any()).
-					Return([]domain.Benchmark{
-						{ID: uuid.New(), Instance: domain.Instance{ID: instanceID}, Status: domain.BenchmarkStatusWaiting},
-					}, nil)
-			},
-			expectError: true,
+		"failure: instance is not running": {
+			envStatus:      domain.EnvironmentStatusReady,
+			instanceStatus: domain.InstanceStatusStopped,
+			expectError:    true,
+		},
+		"failure: user's teamID does not match instance's teamID": {
+			instanceTeamID: uuid.New(),
+			envStatus:      domain.EnvironmentStatusReady,
+			instanceStatus: domain.InstanceStatusRunning,
+			expectError:    true,
+		},
+		"failure: benchmark already queued": {
+			envStatus:      domain.EnvironmentStatusReady,
+			instanceStatus: domain.InstanceStatusRunning,
+			queued:         []domain.Benchmark{{ID: uuid.New(), Status: domain.BenchmarkStatusWaiting}},
+			expectError:    true,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
 			mockRepo := mock.NewMockRepository(ctrl)
+			mockEnvManager := instanceMock.NewMockEnvironmentManager(ctrl)
 			mockManager := instanceMock.NewMockManager(ctrl)
-			useCase := usecase.NewBenchmarkUseCase(mockRepo, mockManager)
+			useCase := usecase.NewBenchmarkUseCase(mockRepo, mockEnvManager, mockManager, tt.benchTarget)
 
-			if tt.setup != nil {
-				tt.setup(mockRepo, mockManager)
+			instanceTeamID := teamID
+			if tt.instanceTeamID != uuid.Nil {
+				instanceTeamID = tt.instanceTeamID
+			}
+			instance := domain.Instance{
+				ID:            instanceID,
+				TeamID:        instanceTeamID,
+				EnvironmentID: envID,
+				Name:          tt.instanceName,
+				Infra:         domain.InfraInstance{ProviderInstanceID: "i-1"},
+			}
+
+			mockRepo.EXPECT().Transaction(gomock.Any(), gomock.Any()).
+				DoAndReturn(func(ctx context.Context, f func(context.Context) error) error { return f(ctx) })
+			mockRepo.EXPECT().FindUser(gomock.Any(), userID).
+				Return(domain.User{ID: userID, TeamID: uuid.NullUUID{Valid: true, UUID: teamID}}, nil)
+			mockRepo.EXPECT().FindInstance(gomock.Any(), instanceID).Return(instance, nil)
+			mockRepo.EXPECT().FindEnvironment(gomock.Any(), envID).Return(domain.Environment{
+				ID:                    envID,
+				TeamID:                instanceTeamID,
+				ProviderEnvironmentID: "piscon-env",
+				Instances:             []domain.Instance{instance},
+			}, nil)
+			mockEnvManager.EXPECT().Get(gomock.Any(), "piscon-env").
+				Return(domain.InfraEnvironment{Status: tt.envStatus}, nil)
+			mockManager.EXPECT().GetByIDs(gomock.Any(), []string{"i-1"}).Return([]domain.InfraInstance{{
+				ProviderInstanceID: "i-1",
+				Status:             tt.instanceStatus,
+				PrivateIP:          ptr.Of("10.0.0.1"),
+			}}, nil)
+			mockRepo.EXPECT().GetBenchmarks(gomock.Any(), gomock.Any()).Return(tt.queued, nil).MaxTimes(1)
+			if !tt.expectError {
+				mockRepo.EXPECT().CreateBenchmark(gomock.Any(), gomock.Any()).Return(nil)
 			}
 
 			_, err := useCase.CreateBenchmark(t.Context(), instanceID, userID)
@@ -211,6 +129,25 @@ func TestCreateBenchmark(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateBenchmark_InstanceNotFound(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	mockRepo := mock.NewMockRepository(ctrl)
+	useCase := usecase.NewBenchmarkUseCase(mockRepo, instanceMock.NewMockEnvironmentManager(ctrl), instanceMock.NewMockManager(ctrl), "")
+
+	userID := uuid.New()
+	instanceID := uuid.New()
+	mockRepo.EXPECT().Transaction(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(ctx context.Context, f func(context.Context) error) error { return f(ctx) })
+	mockRepo.EXPECT().FindUser(gomock.Any(), userID).
+		Return(domain.User{ID: userID, TeamID: uuid.NullUUID{Valid: true, UUID: uuid.New()}}, nil)
+	mockRepo.EXPECT().FindInstance(gomock.Any(), instanceID).Return(domain.Instance{}, repository.ErrNotFound)
+
+	_, err := useCase.CreateBenchmark(t.Context(), instanceID, userID)
+	assert.Error(t, err)
 }
 
 func TestSaveBenchmarkProgress(t *testing.T) {
@@ -338,7 +275,7 @@ func TestSaveBenchmarkProgress(t *testing.T) {
 					Return(testCase.UpdateBenchmarkLogResult.err)
 			}
 
-			uc := usecase.NewBenchmarkUseCase(repo, nil)
+			uc := usecase.NewBenchmarkUseCase(repo, nil, nil, "")
 
 			err := uc.SaveBenchmarkProgress(t.Context(), testCase.benchmarkID, testCase.benchLog, testCase.score, testCase.startedAt)
 			if testCase.isErr {
@@ -468,7 +405,7 @@ func TestFinalizeBenchmark(t *testing.T) {
 					Return(testCase.UpdateBenchmarkResult.err)
 			}
 
-			b := usecase.NewBenchmarkUseCase(repo, nil)
+			b := usecase.NewBenchmarkUseCase(repo, nil, nil, "")
 
 			err := b.FinalizeBenchmark(t.Context(), testCase.benchmarkID, testCase.result, testCase.finishedAt, testCase.errorMes)
 
@@ -589,7 +526,7 @@ func TestStartBenchmark(t *testing.T) {
 					Return(testCase.UpdateBenchmarkErr)
 			}
 
-			b := usecase.NewBenchmarkUseCase(repoMock, infraMock)
+			b := usecase.NewBenchmarkUseCase(repoMock, nil, infraMock, "")
 
 			bench, err := b.StartBenchmark(t.Context())
 
@@ -677,7 +614,7 @@ func TestStartBenchmarkInstanceIPAddresses(t *testing.T) {
 			}
 			gomock.InOrder(calls...)
 
-			job, err := usecase.NewBenchmarkUseCase(repo, manager).StartBenchmark(t.Context())
+			job, err := usecase.NewBenchmarkUseCase(repo, instanceMock.NewMockEnvironmentManager(ctrl), manager, "").StartBenchmark(t.Context())
 			if wantErr {
 				require.Error(t, err)
 				if !tt.noTargetIP {
@@ -753,7 +690,7 @@ func TestDeleteBenchmark(t *testing.T) {
 					Return(testCase.DeleteBenchmarkErr)
 			}
 
-			b := usecase.NewBenchmarkUseCase(repoMock, nil)
+			b := usecase.NewBenchmarkUseCase(repoMock, nil, nil, "")
 
 			err := b.DeleteBenchmark(t.Context(), testCase.benchmarkID)
 

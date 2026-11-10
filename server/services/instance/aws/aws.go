@@ -16,34 +16,22 @@ import (
 
 var _ instance.Manager = (*Client)(nil)
 
-type GitHubKey struct {
-	Key string `json:"key"`
-}
-
 type Client struct {
 	client *ec2.Client
-	cfg    Config
 }
 
+// Config は、AWS に接続するための設定である。
 type Config struct {
-	ImageID      string
-	InstanceType string
-	Region       string
+	Region string
 
 	AccessKey string
 	SecretKey string
-
-	SubnetID        string
-	SecurityGroupID string
-	KeyPairName     string
 }
 
-func NewClient(cfg Config) (*Client, error) {
-	awsConfigFuncs := make([]func(*config.LoadOptions) error, 0, 2)
-
-	awsConfigFuncs = append(awsConfigFuncs, config.WithRegion(cfg.Region))
+func loadConfig(ctx context.Context, cfg Config) (aws.Config, error) {
+	opts := []func(*config.LoadOptions) error{config.WithRegion(cfg.Region)}
 	if cfg.AccessKey != "" && cfg.SecretKey != "" {
-		awsConfigFuncs = append(awsConfigFuncs, config.WithCredentialsProvider(
+		opts = append(opts, config.WithCredentialsProvider(
 			credentials.StaticCredentialsProvider{
 				Value: aws.Credentials{
 					AccessKeyID:     cfg.AccessKey,
@@ -52,89 +40,24 @@ func NewClient(cfg Config) (*Client, error) {
 			},
 		))
 	}
-
-	awsCfg, err := config.LoadDefaultConfig(context.Background(), awsConfigFuncs...)
+	awsCfg, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("load AWS config: %w", err)
+		return aws.Config{}, fmt.Errorf("load AWS config: %w", err)
 	}
+	return awsCfg, nil
+}
 
-	return &Client{
-		client: ec2.NewFromConfig(awsCfg),
-		cfg:    cfg,
-	}, nil
+func NewClient(cfg Config) (*Client, error) {
+	awsCfg, err := loadConfig(context.Background(), cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &Client{client: ec2.NewFromConfig(awsCfg)}, nil
 }
 
 var pisconTagFilter = types.Filter{
 	Name:   lo.ToPtr("tag:piscon"),
 	Values: []string{"true"},
-}
-
-func (a *Client) Create(ctx context.Context, name string, sshPubKeys []string) (string, error) {
-	tagSpec := types.TagSpecification{
-		ResourceType: types.ResourceTypeInstance,
-		Tags: []types.Tag{
-			{
-				Key:   lo.ToPtr("Name"),
-				Value: &name,
-			},
-			{
-				Key:   lo.ToPtr("piscon"),
-				Value: lo.ToPtr("true"),
-			},
-		},
-	}
-
-	cloudConfig := CloudConfig{
-		Users: []User{
-			{
-				Name:              "isucon",
-				Sudo:              "ALL=(ALL) NOPASSWD:ALL",
-				Groups:            []string{"sudo"},
-				SSHAuthorizedKeys: sshPubKeys,
-			},
-		},
-	}
-	userdata, err := cloudConfig.ConvertToUserData()
-	if err != nil {
-		return "", fmt.Errorf("generate user data: %w", err)
-	}
-
-	nispec := types.InstanceNetworkInterfaceSpecification{
-		AssociatePublicIpAddress: lo.ToPtr(true),
-		DeleteOnTermination:      lo.ToPtr(true),
-		DeviceIndex:              lo.ToPtr[int32](0),
-		SubnetId:                 &a.cfg.SubnetID,
-		Groups:                   []string{a.cfg.SecurityGroupID},
-	}
-	instanceInput := &ec2.RunInstancesInput{
-		ImageId:           &a.cfg.ImageID,
-		InstanceType:      types.InstanceType(a.cfg.InstanceType),
-		MinCount:          lo.ToPtr[int32](1),
-		MaxCount:          lo.ToPtr[int32](1),
-		TagSpecifications: []types.TagSpecification{tagSpec},
-		NetworkInterfaces: []types.InstanceNetworkInterfaceSpecification{nispec},
-		KeyName:           &a.cfg.KeyPairName,
-		UserData:          lo.ToPtr(userdata),
-	}
-
-	res, err := a.client.RunInstances(ctx, instanceInput)
-	if err != nil {
-		return "", fmt.Errorf("run instances: %w", err)
-	}
-
-	instance := res.Instances[0]
-	return *instance.InstanceId, nil
-}
-
-func (a *Client) Delete(ctx context.Context, instance domain.InfraInstance) error {
-	_, err := a.client.TerminateInstances(ctx, &ec2.TerminateInstancesInput{
-		InstanceIds: []string{instance.ProviderInstanceID},
-	})
-	if err != nil {
-		return fmt.Errorf("terminate instance: %w", err)
-	}
-
-	return nil
 }
 
 func (a *Client) Get(ctx context.Context, id string) (domain.InfraInstance, error) {
@@ -183,29 +106,6 @@ func (a *Client) GetByIDs(ctx context.Context, ids []string) ([]domain.InfraInst
 			}
 
 			instances = append(instances, infraInstance)
-		}
-	}
-
-	return instances, nil
-}
-
-func (a *Client) GetAll(ctx context.Context) ([]domain.InfraInstance, error) {
-	res, err := a.client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		Filters: []types.Filter{pisconTagFilter},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("describe instances: %w", err)
-	}
-
-	var instances []domain.InfraInstance
-	for _, reservation := range res.Reservations {
-		for _, instance := range reservation.Instances {
-			instances = append(instances, domain.InfraInstance{
-				ProviderInstanceID: *instance.InstanceId,
-				PrivateIP:          instance.PrivateIpAddress,
-				PublicIP:           instance.PublicIpAddress,
-				Status:             convertInstanceState(instance.State.Name),
-			})
 		}
 	}
 

@@ -19,6 +19,7 @@ var Preload = getPreloaders()
 type preloaders struct {
 	BenchmarkLog      benchmarkLogPreloader
 	Benchmark         benchmarkPreloader
+	Environment       environmentPreloader
 	Instance          instancePreloader
 	Session           sessionPreloader
 	TeamGithubAccount teamGithubAccountPreloader
@@ -30,6 +31,7 @@ func getPreloaders() preloaders {
 	return preloaders{
 		BenchmarkLog:      buildBenchmarkLogPreloader(),
 		Benchmark:         buildBenchmarkPreloader(),
+		Environment:       buildEnvironmentPreloader(),
 		Instance:          buildInstancePreloader(),
 		Session:           buildSessionPreloader(),
 		TeamGithubAccount: buildTeamGithubAccountPreloader(),
@@ -46,6 +48,7 @@ var (
 type thenLoaders[Q orm.Loadable] struct {
 	BenchmarkLog      benchmarkLogThenLoader[Q]
 	Benchmark         benchmarkThenLoader[Q]
+	Environment       environmentThenLoader[Q]
 	Instance          instanceThenLoader[Q]
 	Session           sessionThenLoader[Q]
 	TeamGithubAccount teamGithubAccountThenLoader[Q]
@@ -57,6 +60,7 @@ func getThenLoaders[Q orm.Loadable]() thenLoaders[Q] {
 	return thenLoaders[Q]{
 		BenchmarkLog:      buildBenchmarkLogThenLoader[Q](),
 		Benchmark:         buildBenchmarkThenLoader[Q](),
+		Environment:       buildEnvironmentThenLoader[Q](),
 		Instance:          buildInstanceThenLoader[Q](),
 		Session:           buildSessionThenLoader[Q](),
 		TeamGithubAccount: buildTeamGithubAccountThenLoader[Q](),

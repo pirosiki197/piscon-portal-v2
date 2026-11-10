@@ -614,10 +614,165 @@ type DeleteBenchmarkOK struct{}
 
 func (*DeleteBenchmarkOK) deleteBenchmarkRes() {}
 
-// DeleteTeamInstanceOK is response for DeleteTeamInstance operation.
-type DeleteTeamInstanceOK struct{}
+// DeleteTeamEnvironmentOK is response for DeleteTeamEnvironment operation.
+type DeleteTeamEnvironmentOK struct{}
 
-func (*DeleteTeamInstanceOK) deleteTeamInstanceRes() {}
+func (*DeleteTeamEnvironmentOK) deleteTeamEnvironmentRes() {}
+
+// チームに割り当てたサーバー一式.
+// Ref: #/components/schemas/Environment
+type Environment struct {
+	ID     EnvironmentId     `json:"id"`
+	TeamId TeamId            `json:"teamId"`
+	Status EnvironmentStatus `json:"status"`
+	// Status が failed か deleteFailed のときの理由.
+	FailureReason OptString `json:"failureReason"`
+	// チーム環境のサーバーを名前の順に並べたもの。status が ready
+	// になるまでは空.
+	Instances []Instance `json:"instances"`
+	// ベンチの対象が問題で固定されているときの、対象サーバーの
+	// ID。チームが対象を選ぶ問題では含まれない.
+	BenchTargetInstanceId OptInstanceId `json:"benchTargetInstanceId"`
+	CreatedAt             time.Time     `json:"createdAt"`
+}
+
+// GetID returns the value of ID.
+func (s *Environment) GetID() EnvironmentId {
+	return s.ID
+}
+
+// GetTeamId returns the value of TeamId.
+func (s *Environment) GetTeamId() TeamId {
+	return s.TeamId
+}
+
+// GetStatus returns the value of Status.
+func (s *Environment) GetStatus() EnvironmentStatus {
+	return s.Status
+}
+
+// GetFailureReason returns the value of FailureReason.
+func (s *Environment) GetFailureReason() OptString {
+	return s.FailureReason
+}
+
+// GetInstances returns the value of Instances.
+func (s *Environment) GetInstances() []Instance {
+	return s.Instances
+}
+
+// GetBenchTargetInstanceId returns the value of BenchTargetInstanceId.
+func (s *Environment) GetBenchTargetInstanceId() OptInstanceId {
+	return s.BenchTargetInstanceId
+}
+
+// GetCreatedAt returns the value of CreatedAt.
+func (s *Environment) GetCreatedAt() time.Time {
+	return s.CreatedAt
+}
+
+// SetID sets the value of ID.
+func (s *Environment) SetID(val EnvironmentId) {
+	s.ID = val
+}
+
+// SetTeamId sets the value of TeamId.
+func (s *Environment) SetTeamId(val TeamId) {
+	s.TeamId = val
+}
+
+// SetStatus sets the value of Status.
+func (s *Environment) SetStatus(val EnvironmentStatus) {
+	s.Status = val
+}
+
+// SetFailureReason sets the value of FailureReason.
+func (s *Environment) SetFailureReason(val OptString) {
+	s.FailureReason = val
+}
+
+// SetInstances sets the value of Instances.
+func (s *Environment) SetInstances(val []Instance) {
+	s.Instances = val
+}
+
+// SetBenchTargetInstanceId sets the value of BenchTargetInstanceId.
+func (s *Environment) SetBenchTargetInstanceId(val OptInstanceId) {
+	s.BenchTargetInstanceId = val
+}
+
+// SetCreatedAt sets the value of CreatedAt.
+func (s *Environment) SetCreatedAt(val time.Time) {
+	s.CreatedAt = val
+}
+
+func (*Environment) createTeamEnvironmentRes() {}
+func (*Environment) getTeamEnvironmentRes()    {}
+
+type EnvironmentId uuid.UUID
+
+// Ref: #/components/schemas/EnvironmentStatus
+type EnvironmentStatus string
+
+const (
+	EnvironmentStatusCreating     EnvironmentStatus = "creating"
+	EnvironmentStatusReady        EnvironmentStatus = "ready"
+	EnvironmentStatusFailed       EnvironmentStatus = "failed"
+	EnvironmentStatusDeleting     EnvironmentStatus = "deleting"
+	EnvironmentStatusDeleteFailed EnvironmentStatus = "deleteFailed"
+)
+
+// AllValues returns all EnvironmentStatus values.
+func (EnvironmentStatus) AllValues() []EnvironmentStatus {
+	return []EnvironmentStatus{
+		EnvironmentStatusCreating,
+		EnvironmentStatusReady,
+		EnvironmentStatusFailed,
+		EnvironmentStatusDeleting,
+		EnvironmentStatusDeleteFailed,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s EnvironmentStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case EnvironmentStatusCreating:
+		return []byte(s), nil
+	case EnvironmentStatusReady:
+		return []byte(s), nil
+	case EnvironmentStatusFailed:
+		return []byte(s), nil
+	case EnvironmentStatusDeleting:
+		return []byte(s), nil
+	case EnvironmentStatusDeleteFailed:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *EnvironmentStatus) UnmarshalText(data []byte) error {
+	switch EnvironmentStatus(data) {
+	case EnvironmentStatusCreating:
+		*s = EnvironmentStatusCreating
+		return nil
+	case EnvironmentStatusReady:
+		*s = EnvironmentStatusReady
+		return nil
+	case EnvironmentStatusFailed:
+		*s = EnvironmentStatusFailed
+		return nil
+	case EnvironmentStatusDeleting:
+		*s = EnvironmentStatusDeleting
+		return nil
+	case EnvironmentStatusDeleteFailed:
+		*s = EnvironmentStatusDeleteFailed
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // Ref: #/components/schemas/ErrorBadRequest
 type ErrorBadRequest struct {
@@ -634,13 +789,14 @@ func (s *ErrorBadRequest) SetMessage(val OptString) {
 	s.Message = val
 }
 
-func (*ErrorBadRequest) createTeamInstanceRes() {}
-func (*ErrorBadRequest) patchDocsRes()          {}
-func (*ErrorBadRequest) patchTeamInstanceRes()  {}
-func (*ErrorBadRequest) patchTeamRes()          {}
-func (*ErrorBadRequest) postBenchmarkRes()      {}
-func (*ErrorBadRequest) postTeamRes()           {}
-func (*ErrorBadRequest) putAdminsRes()          {}
+func (*ErrorBadRequest) createTeamEnvironmentRes() {}
+func (*ErrorBadRequest) deleteTeamEnvironmentRes() {}
+func (*ErrorBadRequest) patchDocsRes()             {}
+func (*ErrorBadRequest) patchTeamEnvironmentRes()  {}
+func (*ErrorBadRequest) patchTeamRes()             {}
+func (*ErrorBadRequest) postBenchmarkRes()         {}
+func (*ErrorBadRequest) postTeamRes()              {}
+func (*ErrorBadRequest) putAdminsRes()             {}
 
 type FinishedAt time.Time
 
@@ -855,17 +1011,18 @@ func (s *Forbidden) SetMessage(val OptString) {
 	s.Message = val
 }
 
-func (*Forbidden) createTeamInstanceRes()     {}
+func (*Forbidden) createTeamEnvironmentRes()  {}
 func (*Forbidden) deleteBenchmarkRes()        {}
-func (*Forbidden) deleteTeamInstanceRes()     {}
+func (*Forbidden) deleteTeamEnvironmentRes()  {}
 func (*Forbidden) getBenchmarkResultRes()     {}
 func (*Forbidden) getBenchmarksRes()          {}
-func (*Forbidden) getInstancesRes()           {}
+func (*Forbidden) getEnvironmentsRes()        {}
 func (*Forbidden) getTeamBenchmarkResultRes() {}
 func (*Forbidden) getTeamBenchmarksRes()      {}
+func (*Forbidden) getTeamEnvironmentRes()     {}
 func (*Forbidden) getTeamInstancesRes()       {}
 func (*Forbidden) patchDocsRes()              {}
-func (*Forbidden) patchTeamInstanceRes()      {}
+func (*Forbidden) patchTeamEnvironmentRes()   {}
 func (*Forbidden) patchTeamRes()              {}
 func (*Forbidden) postBenchmarkRes()          {}
 func (*Forbidden) putAdminsRes()              {}
@@ -894,9 +1051,9 @@ func (s *GetDocsOK) SetBody(val OptMarkdownDocument) {
 
 func (*GetDocsOK) getDocsRes() {}
 
-type GetInstancesOKApplicationJSON []Instance
+type GetEnvironmentsOKApplicationJSON []Environment
 
-func (*GetInstancesOKApplicationJSON) getInstancesRes() {}
+func (*GetEnvironmentsOKApplicationJSON) getEnvironmentsRes() {}
 
 type GetOauth2CallbackBadRequest struct {
 	Message OptString `json:"message"`
@@ -981,10 +1138,9 @@ type IPAddress string
 type Instance struct {
 	ID     InstanceId `json:"id"`
 	TeamId TeamId     `json:"teamId"`
-	// サーバーのID。チームごとに1から始まる。表示用。
-	// 新しくインスタンスを起動する場合は、1以上の現在使われていない整数が採用される。
-	// インスタンスを削除したら、そのIDは使用されていないものとし、再利用できる。.
-	ServerId int `json:"serverId"`
+	// サーバーの名前。環境テンプレートでの論理 ID で、1
+	// つのチーム環境の中で一意。表示用.
+	Name string `json:"name"`
 	// パブリックIPアドレス。未割り当て・停止・削除などで取得できない場合は空文字を返します。停止後の起動時には新しいアドレスが割り振られます。.
 	PublicIPAddress IPAddress `json:"publicIPAddress"`
 	// プライベートIPアドレス。停止中も保持されます。未割り当て・削除などで取得できない場合は空文字を返します。.
@@ -1003,9 +1159,9 @@ func (s *Instance) GetTeamId() TeamId {
 	return s.TeamId
 }
 
-// GetServerId returns the value of ServerId.
-func (s *Instance) GetServerId() int {
-	return s.ServerId
+// GetName returns the value of Name.
+func (s *Instance) GetName() string {
+	return s.Name
 }
 
 // GetPublicIPAddress returns the value of PublicIPAddress.
@@ -1038,9 +1194,9 @@ func (s *Instance) SetTeamId(val TeamId) {
 	s.TeamId = val
 }
 
-// SetServerId sets the value of ServerId.
-func (s *Instance) SetServerId(val int) {
-	s.ServerId = val
+// SetName sets the value of Name.
+func (s *Instance) SetName(val string) {
+	s.Name = val
 }
 
 // SetPublicIPAddress sets the value of PublicIPAddress.
@@ -1062,8 +1218,6 @@ func (s *Instance) SetStatus(val InstanceStatus) {
 func (s *Instance) SetCreatedAt(val time.Time) {
 	s.CreatedAt = val
 }
-
-func (*Instance) createTeamInstanceRes() {}
 
 type InstanceId uuid.UUID
 
@@ -1200,14 +1354,14 @@ func (s *InternalServerError) SetMessage(val OptString) {
 	s.Message = val
 }
 
-func (*InternalServerError) createTeamInstanceRes()     {}
+func (*InternalServerError) createTeamEnvironmentRes()  {}
 func (*InternalServerError) deleteBenchmarkRes()        {}
-func (*InternalServerError) deleteTeamInstanceRes()     {}
+func (*InternalServerError) deleteTeamEnvironmentRes()  {}
 func (*InternalServerError) getBenchmarkQueueRes()      {}
 func (*InternalServerError) getBenchmarkResultRes()     {}
 func (*InternalServerError) getBenchmarksRes()          {}
 func (*InternalServerError) getDocsRes()                {}
-func (*InternalServerError) getInstancesRes()           {}
+func (*InternalServerError) getEnvironmentsRes()        {}
 func (*InternalServerError) getMeRes()                  {}
 func (*InternalServerError) getOauth2CallbackRes()      {}
 func (*InternalServerError) getOauth2CodeRes()          {}
@@ -1215,12 +1369,13 @@ func (*InternalServerError) getRankingRes()             {}
 func (*InternalServerError) getScoresRes()              {}
 func (*InternalServerError) getTeamBenchmarkResultRes() {}
 func (*InternalServerError) getTeamBenchmarksRes()      {}
+func (*InternalServerError) getTeamEnvironmentRes()     {}
 func (*InternalServerError) getTeamInstancesRes()       {}
 func (*InternalServerError) getTeamRes()                {}
 func (*InternalServerError) getTeamsRes()               {}
 func (*InternalServerError) getUsersRes()               {}
 func (*InternalServerError) patchDocsRes()              {}
-func (*InternalServerError) patchTeamInstanceRes()      {}
+func (*InternalServerError) patchTeamEnvironmentRes()   {}
 func (*InternalServerError) patchTeamRes()              {}
 func (*InternalServerError) postBenchmarkRes()          {}
 func (*InternalServerError) postOauth2LogoutRes()       {}
@@ -1243,15 +1398,16 @@ func (s *NotFound) SetMessage(val OptString) {
 	s.Message = val
 }
 
-func (*NotFound) createTeamInstanceRes()     {}
+func (*NotFound) createTeamEnvironmentRes()  {}
 func (*NotFound) deleteBenchmarkRes()        {}
-func (*NotFound) deleteTeamInstanceRes()     {}
+func (*NotFound) deleteTeamEnvironmentRes()  {}
 func (*NotFound) getBenchmarkResultRes()     {}
 func (*NotFound) getTeamBenchmarkResultRes() {}
 func (*NotFound) getTeamBenchmarksRes()      {}
+func (*NotFound) getTeamEnvironmentRes()     {}
 func (*NotFound) getTeamInstancesRes()       {}
 func (*NotFound) getTeamRes()                {}
-func (*NotFound) patchTeamInstanceRes()      {}
+func (*NotFound) patchTeamEnvironmentRes()   {}
 func (*NotFound) patchTeamRes()              {}
 
 // NewOptBenchmarkStatus returns new OptBenchmarkStatus with value set to v.
@@ -1294,6 +1450,52 @@ func (o OptBenchmarkStatus) Get() (v BenchmarkStatus, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptBenchmarkStatus) Or(d BenchmarkStatus) BenchmarkStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptInstanceId returns new OptInstanceId with value set to v.
+func NewOptInstanceId(v InstanceId) OptInstanceId {
+	return OptInstanceId{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptInstanceId is optional InstanceId.
+type OptInstanceId struct {
+	Value InstanceId
+	Set   bool
+}
+
+// IsSet returns true if OptInstanceId was set.
+func (o OptInstanceId) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptInstanceId) Reset() {
+	var v InstanceId
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptInstanceId) SetTo(v InstanceId) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptInstanceId) Get() (v InstanceId, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptInstanceId) Or(d InstanceId) InstanceId {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1698,22 +1900,22 @@ func (s *PatchDocsReq) SetBody(val MarkdownDocument) {
 	s.Body = val
 }
 
-// PatchTeamInstanceOK is response for PatchTeamInstance operation.
-type PatchTeamInstanceOK struct{}
+// PatchTeamEnvironmentOK is response for PatchTeamEnvironment operation.
+type PatchTeamEnvironmentOK struct{}
 
-func (*PatchTeamInstanceOK) patchTeamInstanceRes() {}
+func (*PatchTeamEnvironmentOK) patchTeamEnvironmentRes() {}
 
-type PatchTeamInstanceReq struct {
+type PatchTeamEnvironmentReq struct {
 	Operation InstanceOperation `json:"operation"`
 }
 
 // GetOperation returns the value of Operation.
-func (s *PatchTeamInstanceReq) GetOperation() InstanceOperation {
+func (s *PatchTeamEnvironmentReq) GetOperation() InstanceOperation {
 	return s.Operation
 }
 
 // SetOperation sets the value of Operation.
-func (s *PatchTeamInstanceReq) SetOperation(val InstanceOperation) {
+func (s *PatchTeamEnvironmentReq) SetOperation(val InstanceOperation) {
 	s.Operation = val
 }
 
@@ -2297,25 +2499,26 @@ func (s *Unauthorized) SetMessage(val OptString) {
 	s.Message = val
 }
 
-func (*Unauthorized) createTeamInstanceRes()     {}
+func (*Unauthorized) createTeamEnvironmentRes()  {}
 func (*Unauthorized) deleteBenchmarkRes()        {}
-func (*Unauthorized) deleteTeamInstanceRes()     {}
+func (*Unauthorized) deleteTeamEnvironmentRes()  {}
 func (*Unauthorized) getBenchmarkQueueRes()      {}
 func (*Unauthorized) getBenchmarkResultRes()     {}
 func (*Unauthorized) getBenchmarksRes()          {}
 func (*Unauthorized) getDocsRes()                {}
-func (*Unauthorized) getInstancesRes()           {}
+func (*Unauthorized) getEnvironmentsRes()        {}
 func (*Unauthorized) getMeRes()                  {}
 func (*Unauthorized) getRankingRes()             {}
 func (*Unauthorized) getScoresRes()              {}
 func (*Unauthorized) getTeamBenchmarkResultRes() {}
 func (*Unauthorized) getTeamBenchmarksRes()      {}
+func (*Unauthorized) getTeamEnvironmentRes()     {}
 func (*Unauthorized) getTeamInstancesRes()       {}
 func (*Unauthorized) getTeamRes()                {}
 func (*Unauthorized) getTeamsRes()               {}
 func (*Unauthorized) getUsersRes()               {}
 func (*Unauthorized) patchDocsRes()              {}
-func (*Unauthorized) patchTeamInstanceRes()      {}
+func (*Unauthorized) patchTeamEnvironmentRes()   {}
 func (*Unauthorized) patchTeamRes()              {}
 func (*Unauthorized) postBenchmarkRes()          {}
 func (*Unauthorized) postOauth2LogoutRes()       {}

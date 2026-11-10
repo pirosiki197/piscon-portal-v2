@@ -21,30 +21,34 @@ var (
 )
 
 type preloadCounts struct {
-	Instance instanceCountPreloader
-	Team     teamCountPreloader
-	User     userCountPreloader
+	Environment environmentCountPreloader
+	Instance    instanceCountPreloader
+	Team        teamCountPreloader
+	User        userCountPreloader
 }
 
 func getPreloadCount() preloadCounts {
 	return preloadCounts{
-		Instance: buildInstanceCountPreloader(),
-		Team:     buildTeamCountPreloader(),
-		User:     buildUserCountPreloader(),
+		Environment: buildEnvironmentCountPreloader(),
+		Instance:    buildInstanceCountPreloader(),
+		Team:        buildTeamCountPreloader(),
+		User:        buildUserCountPreloader(),
 	}
 }
 
 type thenLoadCounts[Q orm.Loadable] struct {
-	Instance instanceCountThenLoader[Q]
-	Team     teamCountThenLoader[Q]
-	User     userCountThenLoader[Q]
+	Environment environmentCountThenLoader[Q]
+	Instance    instanceCountThenLoader[Q]
+	Team        teamCountThenLoader[Q]
+	User        userCountThenLoader[Q]
 }
 
 func getThenLoadCount[Q orm.Loadable]() thenLoadCounts[Q] {
 	return thenLoadCounts[Q]{
-		Instance: buildInstanceCountThenLoader[Q](),
-		Team:     buildTeamCountThenLoader[Q](),
-		User:     buildUserCountThenLoader[Q](),
+		Environment: buildEnvironmentCountThenLoader[Q](),
+		Instance:    buildInstanceCountThenLoader[Q](),
+		Team:        buildTeamCountThenLoader[Q](),
+		User:        buildUserCountThenLoader[Q](),
 	}
 }
 

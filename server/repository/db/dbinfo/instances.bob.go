@@ -42,9 +42,18 @@ var Instances = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		InstanceNumber: column{
-			Name:      "instance_number",
-			DBType:    "int",
+		EnvironmentID: column{
+			Name:      "environment_id",
+			DBType:    "varchar(36)",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		Name: column{
+			Name:      "name",
+			DBType:    "varchar(255)",
 			Default:   "",
 			Comment:   "",
 			Nullable:  false,
@@ -71,6 +80,24 @@ var Instances = Table[
 		},
 	},
 	Indexes: instanceIndexes{
+		EnvironmentID: index{
+			Type: "BTREE",
+			Name: "environment_id",
+			Columns: []indexColumn{
+				{
+					Name:         "environment_id",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+				{
+					Name:         "name",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+			},
+			Unique:  true,
+			Comment: "",
+		},
 		PRIMARY: index{
 			Type: "BTREE",
 			Name: "PRIMARY",
@@ -90,6 +117,24 @@ var Instances = Table[
 		Columns: []string{"id"},
 		Comment: "",
 	},
+	ForeignKeys: instanceForeignKeys{
+		InstancesIbfk1: foreignKey{
+			constraint: constraint{
+				Name:    "instances_ibfk_1",
+				Columns: []string{"environment_id"},
+				Comment: "",
+			},
+			ForeignTable:   "environments",
+			ForeignColumns: []string{"id"},
+		},
+	},
+	Uniques: instanceUniques{
+		EnvironmentID: constraint{
+			Name:    "environment_id",
+			Columns: []string{"environment_id", "name"},
+			Comment: "",
+		},
+	},
 
 	Comment: "",
 }
@@ -98,37 +143,47 @@ type instanceColumns struct {
 	ID                 column
 	ProviderInstanceID column
 	TeamID             column
-	InstanceNumber     column
+	EnvironmentID      column
+	Name               column
 	CreatedAt          column
 	DeletedAt          column
 }
 
 func (c instanceColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.ProviderInstanceID, c.TeamID, c.InstanceNumber, c.CreatedAt, c.DeletedAt,
+		c.ID, c.ProviderInstanceID, c.TeamID, c.EnvironmentID, c.Name, c.CreatedAt, c.DeletedAt,
 	}
 }
 
 type instanceIndexes struct {
-	PRIMARY index
+	EnvironmentID index
+	PRIMARY       index
 }
 
 func (i instanceIndexes) AsSlice() []index {
 	return []index{
-		i.PRIMARY,
+		i.EnvironmentID, i.PRIMARY,
 	}
 }
 
-type instanceForeignKeys struct{}
-
-func (f instanceForeignKeys) AsSlice() []foreignKey {
-	return []foreignKey{}
+type instanceForeignKeys struct {
+	InstancesIbfk1 foreignKey
 }
 
-type instanceUniques struct{}
+func (f instanceForeignKeys) AsSlice() []foreignKey {
+	return []foreignKey{
+		f.InstancesIbfk1,
+	}
+}
+
+type instanceUniques struct {
+	EnvironmentID constraint
+}
 
 func (u instanceUniques) AsSlice() []constraint {
-	return []constraint{}
+	return []constraint{
+		u.EnvironmentID,
+	}
 }
 
 type instanceChecks struct{}

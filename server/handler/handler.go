@@ -77,12 +77,13 @@ func (h *Handler) SetupRoutes(e *echo.Echo) {
 	teams.GET("/:teamID/benchmarks", h.GetTeamBenchmarks, h.TeamOrAdminAuthMiddleware())
 	teams.GET("/:teamID/benchmarks/:benchmarkID", h.GetTeamBenchmark, h.TeamOrAdminAuthMiddleware())
 	teams.GET("/:teamID/instances", h.GetTeamInstances, h.TeamOrAdminAuthMiddleware())
-	teams.POST("/:teamID/instances", h.CreateTeamInstance, h.TeamOrAdminAuthMiddleware())
-	teams.DELETE("/:teamID/instances/:instanceID", h.DeleteTeamInstance, h.TeamOrAdminAuthMiddleware())
-	teams.PATCH("/:teamID/instances/:instanceID", h.PatchTeamInstance, h.TeamOrAdminAuthMiddleware())
+	teams.GET("/:teamID/environment", h.GetTeamEnvironment, h.TeamOrAdminAuthMiddleware())
+	teams.POST("/:teamID/environment", h.CreateTeamEnvironment, h.TeamOrAdminAuthMiddleware())
+	teams.DELETE("/:teamID/environment", h.DeleteTeamEnvironment, h.TeamOrAdminAuthMiddleware())
+	teams.PATCH("/:teamID/environment", h.PatchTeamEnvironment, h.TeamOrAdminAuthMiddleware())
 
-	instances := api.Group("/instances", h.AuthMiddleware())
-	instances.GET("", h.GetInstances, h.AdminAuthMiddleware())
+	environments := api.Group("/environments", h.AuthMiddleware())
+	environments.GET("", h.GetEnvironments, h.AdminAuthMiddleware())
 
 	benchmarks := api.Group("/benchmarks", h.AuthMiddleware())
 	benchmarks.GET("", h.GetBenchmarks, h.AdminAuthMiddleware())

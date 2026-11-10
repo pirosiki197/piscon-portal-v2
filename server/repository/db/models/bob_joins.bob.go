@@ -32,6 +32,7 @@ func (j joinSet[Q]) AliasedAs(alias string) joinSet[Q] {
 type joins[Q dialect.Joinable] struct {
 	BenchmarkLogs      joinSet[benchmarkLogJoins[Q]]
 	Benchmarks         joinSet[benchmarkJoins[Q]]
+	Environments       joinSet[environmentJoins[Q]]
 	Instances          joinSet[instanceJoins[Q]]
 	Sessions           joinSet[sessionJoins[Q]]
 	TeamGithubAccounts joinSet[teamGithubAccountJoins[Q]]
@@ -51,6 +52,7 @@ func getJoins[Q dialect.Joinable]() joins[Q] {
 	return joins[Q]{
 		BenchmarkLogs:      buildJoinSet[benchmarkLogJoins[Q]](BenchmarkLogs.Columns, buildBenchmarkLogJoins),
 		Benchmarks:         buildJoinSet[benchmarkJoins[Q]](Benchmarks.Columns, buildBenchmarkJoins),
+		Environments:       buildJoinSet[environmentJoins[Q]](Environments.Columns, buildEnvironmentJoins),
 		Instances:          buildJoinSet[instanceJoins[Q]](Instances.Columns, buildInstanceJoins),
 		Sessions:           buildJoinSet[sessionJoins[Q]](Sessions.Columns, buildSessionJoins),
 		TeamGithubAccounts: buildJoinSet[teamGithubAccountJoins[Q]](TeamGithubAccounts.Columns, buildTeamGithubAccountJoins),

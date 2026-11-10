@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	domain "github.com/traPtitech/piscon-portal-v2/server/domain"
+	instance "github.com/traPtitech/piscon-portal-v2/server/services/instance"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -39,83 +40,6 @@ func NewMockManager(ctrl *gomock.Controller) *MockManager {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
-}
-
-// Create mocks base method.
-func (m *MockManager) Create(ctx context.Context, name string, sshPubKeys []string) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, name, sshPubKeys)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Create indicates an expected call of Create.
-func (mr *MockManagerMockRecorder) Create(ctx, name, sshPubKeys any) *MockManagerCreateCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockManager)(nil).Create), ctx, name, sshPubKeys)
-	return &MockManagerCreateCall{Call: call}
-}
-
-// MockManagerCreateCall wrap *gomock.Call
-type MockManagerCreateCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockManagerCreateCall) Return(arg0 string, arg1 error) *MockManagerCreateCall {
-	c.Call = c.Call.Return(arg0, arg1)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockManagerCreateCall) Do(f func(context.Context, string, []string) (string, error)) *MockManagerCreateCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockManagerCreateCall) DoAndReturn(f func(context.Context, string, []string) (string, error)) *MockManagerCreateCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
-// Delete mocks base method.
-func (m *MockManager) Delete(ctx context.Context, instance domain.InfraInstance) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, instance)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Delete indicates an expected call of Delete.
-func (mr *MockManagerMockRecorder) Delete(ctx, instance any) *MockManagerDeleteCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockManager)(nil).Delete), ctx, instance)
-	return &MockManagerDeleteCall{Call: call}
-}
-
-// MockManagerDeleteCall wrap *gomock.Call
-type MockManagerDeleteCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockManagerDeleteCall) Return(arg0 error) *MockManagerDeleteCall {
-	c.Call = c.Call.Return(arg0)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockManagerDeleteCall) Do(f func(context.Context, domain.InfraInstance) error) *MockManagerDeleteCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockManagerDeleteCall) DoAndReturn(f func(context.Context, domain.InfraInstance) error) *MockManagerDeleteCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
 }
 
 // Get mocks base method.
@@ -153,45 +77,6 @@ func (c *MockManagerGetCall) Do(f func(context.Context, string) (domain.InfraIns
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockManagerGetCall) DoAndReturn(f func(context.Context, string) (domain.InfraInstance, error)) *MockManagerGetCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
-// GetAll mocks base method.
-func (m *MockManager) GetAll(ctx context.Context) ([]domain.InfraInstance, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAll", ctx)
-	ret0, _ := ret[0].([]domain.InfraInstance)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAll indicates an expected call of GetAll.
-func (mr *MockManagerMockRecorder) GetAll(ctx any) *MockManagerGetAllCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockManager)(nil).GetAll), ctx)
-	return &MockManagerGetAllCall{Call: call}
-}
-
-// MockManagerGetAllCall wrap *gomock.Call
-type MockManagerGetAllCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockManagerGetAllCall) Return(arg0 []domain.InfraInstance, arg1 error) *MockManagerGetAllCall {
-	c.Call = c.Call.Return(arg0, arg1)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockManagerGetAllCall) Do(f func(context.Context) ([]domain.InfraInstance, error)) *MockManagerGetAllCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockManagerGetAllCall) DoAndReturn(f func(context.Context) ([]domain.InfraInstance, error)) *MockManagerGetAllCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -236,17 +121,17 @@ func (c *MockManagerGetByIDsCall) DoAndReturn(f func(context.Context, []string) 
 }
 
 // Start mocks base method.
-func (m *MockManager) Start(ctx context.Context, instance domain.InfraInstance) error {
+func (m *MockManager) Start(ctx context.Context, arg1 domain.InfraInstance) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Start", ctx, instance)
+	ret := m.ctrl.Call(m, "Start", ctx, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Start indicates an expected call of Start.
-func (mr *MockManagerMockRecorder) Start(ctx, instance any) *MockManagerStartCall {
+func (mr *MockManagerMockRecorder) Start(ctx, arg1 any) *MockManagerStartCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockManager)(nil).Start), ctx, instance)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockManager)(nil).Start), ctx, arg1)
 	return &MockManagerStartCall{Call: call}
 }
 
@@ -274,17 +159,17 @@ func (c *MockManagerStartCall) DoAndReturn(f func(context.Context, domain.InfraI
 }
 
 // Stop mocks base method.
-func (m *MockManager) Stop(ctx context.Context, instance domain.InfraInstance) error {
+func (m *MockManager) Stop(ctx context.Context, arg1 domain.InfraInstance) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Stop", ctx, instance)
+	ret := m.ctrl.Call(m, "Stop", ctx, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Stop indicates an expected call of Stop.
-func (mr *MockManagerMockRecorder) Stop(ctx, instance any) *MockManagerStopCall {
+func (mr *MockManagerMockRecorder) Stop(ctx, arg1 any) *MockManagerStopCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockManager)(nil).Stop), ctx, instance)
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockManager)(nil).Stop), ctx, arg1)
 	return &MockManagerStopCall{Call: call}
 }
 
@@ -307,6 +192,146 @@ func (c *MockManagerStopCall) Do(f func(context.Context, domain.InfraInstance) e
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockManagerStopCall) DoAndReturn(f func(context.Context, domain.InfraInstance) error) *MockManagerStopCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// MockEnvironmentManager is a mock of EnvironmentManager interface.
+type MockEnvironmentManager struct {
+	ctrl     *gomock.Controller
+	recorder *MockEnvironmentManagerMockRecorder
+	isgomock struct{}
+}
+
+// MockEnvironmentManagerMockRecorder is the mock recorder for MockEnvironmentManager.
+type MockEnvironmentManagerMockRecorder struct {
+	mock *MockEnvironmentManager
+}
+
+// NewMockEnvironmentManager creates a new mock instance.
+func NewMockEnvironmentManager(ctrl *gomock.Controller) *MockEnvironmentManager {
+	mock := &MockEnvironmentManager{ctrl: ctrl}
+	mock.recorder = &MockEnvironmentManagerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEnvironmentManager) EXPECT() *MockEnvironmentManagerMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockEnvironmentManager) Create(ctx context.Context, name string, params instance.EnvironmentParams) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, name, params)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockEnvironmentManagerMockRecorder) Create(ctx, name, params any) *MockEnvironmentManagerCreateCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockEnvironmentManager)(nil).Create), ctx, name, params)
+	return &MockEnvironmentManagerCreateCall{Call: call}
+}
+
+// MockEnvironmentManagerCreateCall wrap *gomock.Call
+type MockEnvironmentManagerCreateCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockEnvironmentManagerCreateCall) Return(arg0 string, arg1 error) *MockEnvironmentManagerCreateCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockEnvironmentManagerCreateCall) Do(f func(context.Context, string, instance.EnvironmentParams) (string, error)) *MockEnvironmentManagerCreateCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockEnvironmentManagerCreateCall) DoAndReturn(f func(context.Context, string, instance.EnvironmentParams) (string, error)) *MockEnvironmentManagerCreateCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// Delete mocks base method.
+func (m *MockEnvironmentManager) Delete(ctx context.Context, providerEnvironmentID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, providerEnvironmentID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockEnvironmentManagerMockRecorder) Delete(ctx, providerEnvironmentID any) *MockEnvironmentManagerDeleteCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockEnvironmentManager)(nil).Delete), ctx, providerEnvironmentID)
+	return &MockEnvironmentManagerDeleteCall{Call: call}
+}
+
+// MockEnvironmentManagerDeleteCall wrap *gomock.Call
+type MockEnvironmentManagerDeleteCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockEnvironmentManagerDeleteCall) Return(arg0 error) *MockEnvironmentManagerDeleteCall {
+	c.Call = c.Call.Return(arg0)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockEnvironmentManagerDeleteCall) Do(f func(context.Context, string) error) *MockEnvironmentManagerDeleteCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockEnvironmentManagerDeleteCall) DoAndReturn(f func(context.Context, string) error) *MockEnvironmentManagerDeleteCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// Get mocks base method.
+func (m *MockEnvironmentManager) Get(ctx context.Context, providerEnvironmentID string) (domain.InfraEnvironment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, providerEnvironmentID)
+	ret0, _ := ret[0].(domain.InfraEnvironment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockEnvironmentManagerMockRecorder) Get(ctx, providerEnvironmentID any) *MockEnvironmentManagerGetCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockEnvironmentManager)(nil).Get), ctx, providerEnvironmentID)
+	return &MockEnvironmentManagerGetCall{Call: call}
+}
+
+// MockEnvironmentManagerGetCall wrap *gomock.Call
+type MockEnvironmentManagerGetCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockEnvironmentManagerGetCall) Return(arg0 domain.InfraEnvironment, arg1 error) *MockEnvironmentManagerGetCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockEnvironmentManagerGetCall) Do(f func(context.Context, string) (domain.InfraEnvironment, error)) *MockEnvironmentManagerGetCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockEnvironmentManagerGetCall) DoAndReturn(f func(context.Context, string) (domain.InfraEnvironment, error)) *MockEnvironmentManagerGetCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

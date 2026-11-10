@@ -20,6 +20,7 @@ func Where[Q mysql.Filterable]() struct {
 	BenchmarkLogs      benchmarkLogWhere[Q]
 	Benchmarks         benchmarkWhere[Q]
 	Documents          documentWhere[Q]
+	Environments       environmentWhere[Q]
 	Instances          instanceWhere[Q]
 	Problems           problemWhere[Q]
 	Sessions           sessionWhere[Q]
@@ -31,6 +32,7 @@ func Where[Q mysql.Filterable]() struct {
 		BenchmarkLogs      benchmarkLogWhere[Q]
 		Benchmarks         benchmarkWhere[Q]
 		Documents          documentWhere[Q]
+		Environments       environmentWhere[Q]
 		Instances          instanceWhere[Q]
 		Problems           problemWhere[Q]
 		Sessions           sessionWhere[Q]
@@ -41,6 +43,7 @@ func Where[Q mysql.Filterable]() struct {
 		BenchmarkLogs:      buildBenchmarkLogWhere[Q](BenchmarkLogs.Columns),
 		Benchmarks:         buildBenchmarkWhere[Q](Benchmarks.Columns),
 		Documents:          buildDocumentWhere[Q](Documents.Columns),
+		Environments:       buildEnvironmentWhere[Q](Environments.Columns),
 		Instances:          buildInstanceWhere[Q](Instances.Columns),
 		Problems:           buildProblemWhere[Q](Problems.Columns),
 		Sessions:           buildSessionWhere[Q](Sessions.Columns),

@@ -2,8 +2,8 @@
 
 package openapi
 
-// CreateTeamInstanceParams is parameters of createTeamInstance operation.
-type CreateTeamInstanceParams struct {
+// CreateTeamEnvironmentParams is parameters of createTeamEnvironment operation.
+type CreateTeamEnvironmentParams struct {
 	// チームID.
 	TeamId TeamId
 }
@@ -14,12 +14,10 @@ type DeleteBenchmarkParams struct {
 	BenchmarkId BenchmarkId
 }
 
-// DeleteTeamInstanceParams is parameters of deleteTeamInstance operation.
-type DeleteTeamInstanceParams struct {
+// DeleteTeamEnvironmentParams is parameters of deleteTeamEnvironment operation.
+type DeleteTeamEnvironmentParams struct {
 	// チームID.
 	TeamId TeamId
-	// インスタンスID.
-	InstanceId InstanceId
 }
 
 // GetBenchmarkResultParams is parameters of getBenchmarkResult operation.
@@ -68,6 +66,12 @@ type GetTeamBenchmarksParams struct {
 	Status OptBenchmarkStatus `json:",omitempty,omitzero"`
 }
 
+// GetTeamEnvironmentParams is parameters of getTeamEnvironment operation.
+type GetTeamEnvironmentParams struct {
+	// チームID.
+	TeamId TeamId
+}
+
 // GetTeamInstancesParams is parameters of getTeamInstances operation.
 type GetTeamInstancesParams struct {
 	// チームID.
@@ -80,10 +84,8 @@ type PatchTeamParams struct {
 	TeamId TeamId
 }
 
-// PatchTeamInstanceParams is parameters of patchTeamInstance operation.
-type PatchTeamInstanceParams struct {
+// PatchTeamEnvironmentParams is parameters of patchTeamEnvironment operation.
+type PatchTeamEnvironmentParams struct {
 	// チームID.
 	TeamId TeamId
-	// インスタンスID.
-	InstanceId InstanceId
 }

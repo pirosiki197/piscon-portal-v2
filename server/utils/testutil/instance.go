@@ -13,7 +13,8 @@ func CompareInstance(t *testing.T, want, got domain.Instance) {
 
 	assert.Equal(t, want.ID, got.ID, "instance.ID mismatch")
 	assert.Equal(t, want.TeamID, got.TeamID, "instance.TeamID mismatch")
-	assert.Equal(t, want.Index, got.Index, "instance.Index mismatch")
+	assert.Equal(t, want.Name, got.Name, "instance.Name mismatch")
+	assert.Equal(t, want.EnvironmentID, got.EnvironmentID, "instance.EnvironmentID mismatch")
 	assert.Equal(t, want.Infra.ProviderInstanceID, got.Infra.ProviderInstanceID, "instance.Infra.ProviderInstanceID mismatch")
 	assert.Equal(t, want.Infra.Status, got.Infra.Status, "instance.Infra.Status mismatch")
 	assert.Equal(t, want.Infra.PrivateIP, got.Infra.PrivateIP, "instance.Infra.PrivateIP mismatch")

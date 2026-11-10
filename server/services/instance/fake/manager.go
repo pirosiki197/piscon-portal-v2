@@ -74,7 +74,8 @@ func NewManager(root *os.Root) (*Manager, error) {
 	return m, nil
 }
 
-func (m *Manager) Create(_ context.Context, _ string, _ []string) (string, error) {
+// createInstance は、fake のサーバーを 1 台作り、ID を返す。サーバーは数秒後に running になる。
+func (m *Manager) createInstance() (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -139,17 +140,6 @@ func (m *Manager) Get(_ context.Context, id string) (domain.InfraInstance, error
 	return instance, nil
 }
 
-func (m *Manager) GetAll(_ context.Context) ([]domain.InfraInstance, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	instances, err := m.readInstances()
-	if err != nil {
-		return nil, fmt.Errorf("read instances: %w", err)
-	}
-	return instances, nil
-}
-
 func (m *Manager) GetByIDs(_ context.Context, ids []string) ([]domain.InfraInstance, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -169,19 +159,22 @@ func (m *Manager) GetByIDs(_ context.Context, ids []string) ([]domain.InfraInsta
 	return result, nil
 }
 
-func (m *Manager) Delete(_ context.Context, instance domain.InfraInstance) error {
+// deleteInstance は、fake のサーバーを消す。
+func (m *Manager) deleteInstance(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
-	instance.Status = domain.InstanceStatusDeleted
 
 	instances, err := m.readInstances()
 	if err != nil {
 		return fmt.Errorf("read instances: %w", err)
 	}
 
+	instance, ok := lo.Find(instances, func(i domain.InfraInstance) bool { return i.ProviderInstanceID == id })
+	if !ok {
+		return nil
+	}
 	instances = slices.DeleteFunc(instances, func(i domain.InfraInstance) bool {
-		return i.ProviderInstanceID == instance.ProviderInstanceID
+		return i.ProviderInstanceID == id
 	})
 
 	// Remove the IPs from the IP info
@@ -189,8 +182,8 @@ func (m *Manager) Delete(_ context.Context, instance domain.InfraInstance) error
 	if err != nil {
 		return fmt.Errorf("read IP info: %w", err)
 	}
-	ipInfo.PrivateIPs = lo.Without(ipInfo.PrivateIPs, *instance.PrivateIP)
-	ipInfo.PublicIPs = lo.Without(ipInfo.PublicIPs, *instance.PublicIP)
+	ipInfo.PrivateIPs = lo.Without(ipInfo.PrivateIPs, lo.FromPtr(instance.PrivateIP))
+	ipInfo.PublicIPs = lo.Without(ipInfo.PublicIPs, lo.FromPtr(instance.PublicIP))
 
 	if err := m.storeIPInfo(ipInfo); err != nil {
 		return fmt.Errorf("store IP info: %w", err)

@@ -15,6 +15,8 @@ tags:
     description: "チームに関するAPI"
   - name: "instance"
     description: "インスタンスに関するAPI"
+  - name: "environment"
+    description: "チーム環境に関するAPI"
   - name: "benchmark"
     description: "ベンチマークに関するAPI"
   - name: "score"
@@ -278,11 +280,37 @@ paths:
         500:
           $ref: "#/components/responses/InternalServerError"
 
+  /teams/{teamId}/environment:
+    get:
+      tags: ["environment"]
+      summary: "チーム環境取得"
+      description: "チームの削除されていないチーム環境を取得します。チーム環境がなければ404を返します"
+      operationId: "getTeamEnvironment"
+      security:
+        - TeamAuth: []
+        - AdminAuth: []
+      parameters:
+        - $ref: "#/components/parameters/teamId"
+      responses:
+        200:
+          description: "チーム環境の取得に成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Environment"
+        401:
+          $ref: "#/components/responses/Unauthorized"
+        403:
+          $ref: "#/components/responses/Forbidden"
+        404:
+          $ref: "#/components/responses/NotFound"
+        500:
+          $ref: "#/components/responses/InternalServerError"
     post:
-      tags: ["instance"]
-      summary: "インスタンス起動"
-      description: "インスタンスを起動してチームに追加します"
-      operationId: "createTeamInstance"
+      tags: ["environment"]
+      summary: "チーム環境作成"
+      description: "チーム環境の作成を始めます。作成の完了は待ちません"
+      operationId: "createTeamEnvironment"
       security:
         - TeamAuth: []
         - AdminAuth: []
@@ -290,13 +318,13 @@ paths:
         - $ref: "#/components/parameters/teamId"
       responses:
         201:
-          description: "インスタンスの起動に成功"
+          description: "チーム環境の作成の開始に成功"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Instance"
+                $ref: "#/components/schemas/Environment"
         400:
-          description: "インスタンス数の上限に達しているなど"
+          description: "チームにチーム環境がすでにあるなど"
           content:
             application/json:
               schema:
@@ -309,22 +337,25 @@ paths:
           $ref: "#/components/responses/NotFound"
         500:
           $ref: "#/components/responses/InternalServerError"
-
-  /teams/{teamId}/instances/{instanceId}:
     delete:
-      tags: ["instance"]
-      summary: "インスタンス削除"
-      description: "インスタンスを削除します"
-      operationId: "deleteTeamInstance"
+      tags: ["environment"]
+      summary: "チーム環境削除"
+      description: "チーム環境の削除を始めます。削除の完了は待ちません"
+      operationId: "deleteTeamEnvironment"
       security:
         - TeamAuth: []
         - AdminAuth: []
       parameters:
         - $ref: "#/components/parameters/teamId"
-        - $ref: "#/components/parameters/instanceId"
       responses:
         200:
-          description: "インスタンスの削除に成功"
+          description: "チーム環境の削除の開始に成功"
+        400:
+          description: "チームのベンチマークが待機中か実行中であるなど"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -334,16 +365,15 @@ paths:
         500:
           $ref: "#/components/responses/InternalServerError"
     patch:
-      tags: ["instance"]
-      summary: "インスタンス状態変更"
-      description: "インスタンスの状態を変更します"
-      operationId: "patchTeamInstance"
+      tags: ["environment"]
+      summary: "チーム環境の停止・起動"
+      description: "チーム環境のすべてのサーバーを停止または起動します"
+      operationId: "patchTeamEnvironment"
       security:
         - TeamAuth: []
         - AdminAuth: []
       parameters:
         - $ref: "#/components/parameters/teamId"
-        - $ref: "#/components/parameters/instanceId"
       requestBody:
         required: true
         content:
@@ -357,9 +387,9 @@ paths:
                 - operation
       responses:
         200:
-          description: "インスタンスの操作に成功"
+          description: "チーム環境の操作に成功"
         400:
-          description: "操作後も現在と同じステータスである、無効な操作である。"
+          description: "チーム環境が ready でない、無効な操作であるなど"
           content:
             application/json:
               schema:
@@ -373,23 +403,23 @@ paths:
         500:
           $ref: "#/components/responses/InternalServerError"
 
-  /instances:
+  /environments:
     get:
-      tags: ["instance"]
-      summary: "インスタンス一覧取得"
-      description: "全インスタンス一覧を取得します。削除済みのインスタンスも含まれます (0件の場合も200で空配列が返ります)"
-      operationId: "getInstances"
+      tags: ["environment"]
+      summary: "チーム環境一覧取得"
+      description: "削除されていないチーム環境の一覧を取得します (0件の場合も200で空配列が返ります)"
+      operationId: "getEnvironments"
       security:
         - AdminAuth: []
       responses:
         200:
-          description: "インスタンス一覧の取得に成功。チームIDの昇順で返す"
+          description: "チーム環境一覧の取得に成功"
           content:
             application/json:
               schema:
                 type: "array"
                 items:
-                  $ref: "#/components/schemas/Instance"
+                  $ref: "#/components/schemas/Environment"
         401:
           $ref: "#/components/responses/Unauthorized"
         403:
@@ -798,13 +828,6 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/TeamId"
-    instanceId:
-      name: "instanceId"
-      in: "path"
-      description: "インスタンスID"
-      required: true
-      schema:
-        $ref: "#/components/schemas/InstanceId"
     benchmarkId:
       name: "benchmarkId"
       in: "path"
@@ -860,14 +883,10 @@ components:
           $ref: "#/components/schemas/InstanceId"
         teamId:
           $ref: "#/components/schemas/TeamId"
-        serverId:
-          type: "integer"
-          example: 1
-          minimum: 1
-          description: |
-            サーバーのID。チームごとに1から始まる。表示用。
-            新しくインスタンスを起動する場合は、1以上の現在使われていない整数が採用される。
-            インスタンスを削除したら、そのIDは使用されていないものとし、再利用できる。
+        name:
+          type: "string"
+          example: "Webapp"
+          description: "サーバーの名前。環境テンプレートでの論理 ID で、1 つのチーム環境の中で一意。表示用"
         publicIPAddress:
           description: "パブリックIPアドレス。未割り当て・停止・削除などで取得できない場合は空文字を返します。停止後の起動時には新しいアドレスが割り振られます。"
           $ref: "#/components/schemas/IPAddress"
@@ -883,10 +902,55 @@ components:
       required:
         - id
         - teamId
-        - serverId
+        - name
         - publicIPAddress
         - privateIPAddress
         - status
+        - createdAt
+
+    EnvironmentId:
+      type: "string"
+      format: "uuid"
+      example: "00000000-0000-0000-0000-000000000000"
+    EnvironmentStatus:
+      type: "string"
+      enum:
+        - "creating"
+        - "ready"
+        - "failed"
+        - "deleting"
+        - "deleteFailed"
+      example: "ready"
+    Environment:
+      type: "object"
+      description: "チームに割り当てたサーバー一式"
+      properties:
+        id:
+          $ref: "#/components/schemas/EnvironmentId"
+        teamId:
+          $ref: "#/components/schemas/TeamId"
+        status:
+          $ref: "#/components/schemas/EnvironmentStatus"
+        failureReason:
+          type: "string"
+          description: "status が failed か deleteFailed のときの理由"
+        instances:
+          type: "array"
+          description: "チーム環境のサーバーを名前の順に並べたもの。status が ready になるまでは空"
+          items:
+            $ref: "#/components/schemas/Instance"
+        benchTargetInstanceId:
+          description: "ベンチの対象が問題で固定されているときの、対象サーバーの ID。チームが対象を選ぶ問題では含まれない"
+          $ref: "#/components/schemas/InstanceId"
+        createdAt:
+          type: "string"
+          format: "date-time"
+          example: "2021-01-01T00:00:00Z"
+      required:
+        - id
+        - teamId
+        - status
+        - instances
         - createdAt
 
     IPAddress:

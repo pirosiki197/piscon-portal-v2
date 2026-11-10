@@ -290,7 +290,6 @@ func TestGetOldestQueuedBenchmark(t *testing.T) {
 	instance := domain.Instance{
 		ID:     uuid.New(),
 		TeamID: uuid.New(),
-		Index:  1,
 		Infra: domain.InfraInstance{
 			ProviderInstanceID: "provider-instance-id",
 			Status:             domain.InstanceStatusRunning,
@@ -417,7 +416,6 @@ func TestUpdateBenchmark(t *testing.T) {
 	instance := domain.Instance{
 		ID:     uuid.New(),
 		TeamID: uuid.New(),
-		Index:  1,
 		Infra: domain.InfraInstance{
 			ProviderInstanceID: "provider-instance-id",
 			Status:             domain.InstanceStatusRunning,

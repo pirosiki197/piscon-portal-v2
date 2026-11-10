@@ -122,41 +122,41 @@ func (c *MockUseCaseCreateDocumentCall) DoAndReturn(f func(context.Context, stri
 	return c
 }
 
-// CreateInstance mocks base method.
-func (m *MockUseCase) CreateInstance(ctx context.Context, teamID uuid.UUID) (domain.Instance, error) {
+// CreateEnvironment mocks base method.
+func (m *MockUseCase) CreateEnvironment(ctx context.Context, teamID uuid.UUID) (usecase.TeamEnvironment, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateInstance", ctx, teamID)
-	ret0, _ := ret[0].(domain.Instance)
+	ret := m.ctrl.Call(m, "CreateEnvironment", ctx, teamID)
+	ret0, _ := ret[0].(usecase.TeamEnvironment)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateInstance indicates an expected call of CreateInstance.
-func (mr *MockUseCaseMockRecorder) CreateInstance(ctx, teamID any) *MockUseCaseCreateInstanceCall {
+// CreateEnvironment indicates an expected call of CreateEnvironment.
+func (mr *MockUseCaseMockRecorder) CreateEnvironment(ctx, teamID any) *MockUseCaseCreateEnvironmentCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstance", reflect.TypeOf((*MockUseCase)(nil).CreateInstance), ctx, teamID)
-	return &MockUseCaseCreateInstanceCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEnvironment", reflect.TypeOf((*MockUseCase)(nil).CreateEnvironment), ctx, teamID)
+	return &MockUseCaseCreateEnvironmentCall{Call: call}
 }
 
-// MockUseCaseCreateInstanceCall wrap *gomock.Call
-type MockUseCaseCreateInstanceCall struct {
+// MockUseCaseCreateEnvironmentCall wrap *gomock.Call
+type MockUseCaseCreateEnvironmentCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockUseCaseCreateInstanceCall) Return(arg0 domain.Instance, arg1 error) *MockUseCaseCreateInstanceCall {
+func (c *MockUseCaseCreateEnvironmentCall) Return(arg0 usecase.TeamEnvironment, arg1 error) *MockUseCaseCreateEnvironmentCall {
 	c.Call = c.Call.Return(arg0, arg1)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockUseCaseCreateInstanceCall) Do(f func(context.Context, uuid.UUID) (domain.Instance, error)) *MockUseCaseCreateInstanceCall {
+func (c *MockUseCaseCreateEnvironmentCall) Do(f func(context.Context, uuid.UUID) (usecase.TeamEnvironment, error)) *MockUseCaseCreateEnvironmentCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockUseCaseCreateInstanceCall) DoAndReturn(f func(context.Context, uuid.UUID) (domain.Instance, error)) *MockUseCaseCreateInstanceCall {
+func (c *MockUseCaseCreateEnvironmentCall) DoAndReturn(f func(context.Context, uuid.UUID) (usecase.TeamEnvironment, error)) *MockUseCaseCreateEnvironmentCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -238,40 +238,40 @@ func (c *MockUseCaseDeleteBenchmarkCall) DoAndReturn(f func(context.Context, uui
 	return c
 }
 
-// DeleteInstance mocks base method.
-func (m *MockUseCase) DeleteInstance(ctx context.Context, id uuid.UUID) error {
+// DeleteEnvironment mocks base method.
+func (m *MockUseCase) DeleteEnvironment(ctx context.Context, teamID uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteInstance", ctx, id)
+	ret := m.ctrl.Call(m, "DeleteEnvironment", ctx, teamID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteInstance indicates an expected call of DeleteInstance.
-func (mr *MockUseCaseMockRecorder) DeleteInstance(ctx, id any) *MockUseCaseDeleteInstanceCall {
+// DeleteEnvironment indicates an expected call of DeleteEnvironment.
+func (mr *MockUseCaseMockRecorder) DeleteEnvironment(ctx, teamID any) *MockUseCaseDeleteEnvironmentCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteInstance", reflect.TypeOf((*MockUseCase)(nil).DeleteInstance), ctx, id)
-	return &MockUseCaseDeleteInstanceCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEnvironment", reflect.TypeOf((*MockUseCase)(nil).DeleteEnvironment), ctx, teamID)
+	return &MockUseCaseDeleteEnvironmentCall{Call: call}
 }
 
-// MockUseCaseDeleteInstanceCall wrap *gomock.Call
-type MockUseCaseDeleteInstanceCall struct {
+// MockUseCaseDeleteEnvironmentCall wrap *gomock.Call
+type MockUseCaseDeleteEnvironmentCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockUseCaseDeleteInstanceCall) Return(arg0 error) *MockUseCaseDeleteInstanceCall {
+func (c *MockUseCaseDeleteEnvironmentCall) Return(arg0 error) *MockUseCaseDeleteEnvironmentCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockUseCaseDeleteInstanceCall) Do(f func(context.Context, uuid.UUID) error) *MockUseCaseDeleteInstanceCall {
+func (c *MockUseCaseDeleteEnvironmentCall) Do(f func(context.Context, uuid.UUID) error) *MockUseCaseDeleteEnvironmentCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockUseCaseDeleteInstanceCall) DoAndReturn(f func(context.Context, uuid.UUID) error) *MockUseCaseDeleteInstanceCall {
+func (c *MockUseCaseDeleteEnvironmentCall) DoAndReturn(f func(context.Context, uuid.UUID) error) *MockUseCaseDeleteEnvironmentCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -310,45 +310,6 @@ func (c *MockUseCaseFinalizeBenchmarkCall) Do(f func(context.Context, uuid.UUID,
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockUseCaseFinalizeBenchmarkCall) DoAndReturn(f func(context.Context, uuid.UUID, domain.BenchmarkResult, time.Time, *string) error) *MockUseCaseFinalizeBenchmarkCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
-// GetAllInstances mocks base method.
-func (m *MockUseCase) GetAllInstances(ctx context.Context) ([]domain.Instance, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllInstances", ctx)
-	ret0, _ := ret[0].([]domain.Instance)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllInstances indicates an expected call of GetAllInstances.
-func (mr *MockUseCaseMockRecorder) GetAllInstances(ctx any) *MockUseCaseGetAllInstancesCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllInstances", reflect.TypeOf((*MockUseCase)(nil).GetAllInstances), ctx)
-	return &MockUseCaseGetAllInstancesCall{Call: call}
-}
-
-// MockUseCaseGetAllInstancesCall wrap *gomock.Call
-type MockUseCaseGetAllInstancesCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockUseCaseGetAllInstancesCall) Return(arg0 []domain.Instance, arg1 error) *MockUseCaseGetAllInstancesCall {
-	c.Call = c.Call.Return(arg0, arg1)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockUseCaseGetAllInstancesCall) Do(f func(context.Context) ([]domain.Instance, error)) *MockUseCaseGetAllInstancesCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockUseCaseGetAllInstancesCall) DoAndReturn(f func(context.Context) ([]domain.Instance, error)) *MockUseCaseGetAllInstancesCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -509,41 +470,41 @@ func (c *MockUseCaseGetDocumentCall) DoAndReturn(f func(context.Context) (domain
 	return c
 }
 
-// GetInstance mocks base method.
-func (m *MockUseCase) GetInstance(ctx context.Context, id uuid.UUID) (domain.Instance, error) {
+// GetEnvironments mocks base method.
+func (m *MockUseCase) GetEnvironments(ctx context.Context) ([]domain.Environment, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetInstance", ctx, id)
-	ret0, _ := ret[0].(domain.Instance)
+	ret := m.ctrl.Call(m, "GetEnvironments", ctx)
+	ret0, _ := ret[0].([]domain.Environment)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetInstance indicates an expected call of GetInstance.
-func (mr *MockUseCaseMockRecorder) GetInstance(ctx, id any) *MockUseCaseGetInstanceCall {
+// GetEnvironments indicates an expected call of GetEnvironments.
+func (mr *MockUseCaseMockRecorder) GetEnvironments(ctx any) *MockUseCaseGetEnvironmentsCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstance", reflect.TypeOf((*MockUseCase)(nil).GetInstance), ctx, id)
-	return &MockUseCaseGetInstanceCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEnvironments", reflect.TypeOf((*MockUseCase)(nil).GetEnvironments), ctx)
+	return &MockUseCaseGetEnvironmentsCall{Call: call}
 }
 
-// MockUseCaseGetInstanceCall wrap *gomock.Call
-type MockUseCaseGetInstanceCall struct {
+// MockUseCaseGetEnvironmentsCall wrap *gomock.Call
+type MockUseCaseGetEnvironmentsCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockUseCaseGetInstanceCall) Return(arg0 domain.Instance, arg1 error) *MockUseCaseGetInstanceCall {
+func (c *MockUseCaseGetEnvironmentsCall) Return(arg0 []domain.Environment, arg1 error) *MockUseCaseGetEnvironmentsCall {
 	c.Call = c.Call.Return(arg0, arg1)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockUseCaseGetInstanceCall) Do(f func(context.Context, uuid.UUID) (domain.Instance, error)) *MockUseCaseGetInstanceCall {
+func (c *MockUseCaseGetEnvironmentsCall) Do(f func(context.Context) ([]domain.Environment, error)) *MockUseCaseGetEnvironmentsCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockUseCaseGetInstanceCall) DoAndReturn(f func(context.Context, uuid.UUID) (domain.Instance, error)) *MockUseCaseGetInstanceCall {
+func (c *MockUseCaseGetEnvironmentsCall) DoAndReturn(f func(context.Context) ([]domain.Environment, error)) *MockUseCaseGetEnvironmentsCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -739,6 +700,45 @@ func (c *MockUseCaseGetTeamBenchmarksCall) Do(f func(context.Context, uuid.UUID)
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockUseCaseGetTeamBenchmarksCall) DoAndReturn(f func(context.Context, uuid.UUID) ([]domain.Benchmark, error)) *MockUseCaseGetTeamBenchmarksCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// GetTeamEnvironment mocks base method.
+func (m *MockUseCase) GetTeamEnvironment(ctx context.Context, teamID uuid.UUID) (usecase.TeamEnvironment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTeamEnvironment", ctx, teamID)
+	ret0, _ := ret[0].(usecase.TeamEnvironment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTeamEnvironment indicates an expected call of GetTeamEnvironment.
+func (mr *MockUseCaseMockRecorder) GetTeamEnvironment(ctx, teamID any) *MockUseCaseGetTeamEnvironmentCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTeamEnvironment", reflect.TypeOf((*MockUseCase)(nil).GetTeamEnvironment), ctx, teamID)
+	return &MockUseCaseGetTeamEnvironmentCall{Call: call}
+}
+
+// MockUseCaseGetTeamEnvironmentCall wrap *gomock.Call
+type MockUseCaseGetTeamEnvironmentCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockUseCaseGetTeamEnvironmentCall) Return(arg0 usecase.TeamEnvironment, arg1 error) *MockUseCaseGetTeamEnvironmentCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockUseCaseGetTeamEnvironmentCall) Do(f func(context.Context, uuid.UUID) (usecase.TeamEnvironment, error)) *MockUseCaseGetTeamEnvironmentCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockUseCaseGetTeamEnvironmentCall) DoAndReturn(f func(context.Context, uuid.UUID) (usecase.TeamEnvironment, error)) *MockUseCaseGetTeamEnvironmentCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }
@@ -1014,40 +1014,40 @@ func (c *MockUseCaseStartBenchmarkCall) DoAndReturn(f func(context.Context) (dom
 	return c
 }
 
-// UpdateInstance mocks base method.
-func (m *MockUseCase) UpdateInstance(ctx context.Context, id uuid.UUID, op domain.InstanceOperation) error {
+// UpdateEnvironment mocks base method.
+func (m *MockUseCase) UpdateEnvironment(ctx context.Context, teamID uuid.UUID, op domain.InstanceOperation) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateInstance", ctx, id, op)
+	ret := m.ctrl.Call(m, "UpdateEnvironment", ctx, teamID, op)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateInstance indicates an expected call of UpdateInstance.
-func (mr *MockUseCaseMockRecorder) UpdateInstance(ctx, id, op any) *MockUseCaseUpdateInstanceCall {
+// UpdateEnvironment indicates an expected call of UpdateEnvironment.
+func (mr *MockUseCaseMockRecorder) UpdateEnvironment(ctx, teamID, op any) *MockUseCaseUpdateEnvironmentCall {
 	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateInstance", reflect.TypeOf((*MockUseCase)(nil).UpdateInstance), ctx, id, op)
-	return &MockUseCaseUpdateInstanceCall{Call: call}
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEnvironment", reflect.TypeOf((*MockUseCase)(nil).UpdateEnvironment), ctx, teamID, op)
+	return &MockUseCaseUpdateEnvironmentCall{Call: call}
 }
 
-// MockUseCaseUpdateInstanceCall wrap *gomock.Call
-type MockUseCaseUpdateInstanceCall struct {
+// MockUseCaseUpdateEnvironmentCall wrap *gomock.Call
+type MockUseCaseUpdateEnvironmentCall struct {
 	*gomock.Call
 }
 
 // Return rewrite *gomock.Call.Return
-func (c *MockUseCaseUpdateInstanceCall) Return(arg0 error) *MockUseCaseUpdateInstanceCall {
+func (c *MockUseCaseUpdateEnvironmentCall) Return(arg0 error) *MockUseCaseUpdateEnvironmentCall {
 	c.Call = c.Call.Return(arg0)
 	return c
 }
 
 // Do rewrite *gomock.Call.Do
-func (c *MockUseCaseUpdateInstanceCall) Do(f func(context.Context, uuid.UUID, domain.InstanceOperation) error) *MockUseCaseUpdateInstanceCall {
+func (c *MockUseCaseUpdateEnvironmentCall) Do(f func(context.Context, uuid.UUID, domain.InstanceOperation) error) *MockUseCaseUpdateEnvironmentCall {
 	c.Call = c.Call.Do(f)
 	return c
 }
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockUseCaseUpdateInstanceCall) DoAndReturn(f func(context.Context, uuid.UUID, domain.InstanceOperation) error) *MockUseCaseUpdateInstanceCall {
+func (c *MockUseCaseUpdateEnvironmentCall) DoAndReturn(f func(context.Context, uuid.UUID, domain.InstanceOperation) error) *MockUseCaseUpdateEnvironmentCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

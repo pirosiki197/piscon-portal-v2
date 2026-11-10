@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/samber/lo"
@@ -15,18 +14,6 @@ import (
 	"github.com/traPtitech/piscon-portal-v2/server/repository"
 	"github.com/traPtitech/piscon-portal-v2/server/repository/db/models"
 )
-
-func (r *Repository) CreateInstance(ctx context.Context, instance domain.Instance) error {
-	setter, err := buildInstanceSetter(instance)
-	if err != nil {
-		return fmt.Errorf("create instance: %w", err)
-	}
-	_, err = models.Instances.Insert(setter).Exec(ctx, r.executor(ctx))
-	if err != nil {
-		return fmt.Errorf("create instance: %w", err)
-	}
-	return nil
-}
 
 func (r *Repository) FindInstance(ctx context.Context, id uuid.UUID) (domain.Instance, error) {
 	instance, err := models.FindInstance(ctx, r.executor(ctx), id.String())
@@ -52,6 +39,10 @@ func (r *Repository) GetTeamInstances(ctx context.Context, teamID uuid.UUID, inc
 	if err != nil {
 		return nil, fmt.Errorf("get team instances: %w", err)
 	}
+	return toDomainInstances(instances)
+}
+
+func toDomainInstances(instances models.InstanceSlice) ([]domain.Instance, error) {
 	result := make([]domain.Instance, 0, len(instances))
 	for _, inst := range instances {
 		domainInst, err := toDomainInstance(inst)
@@ -61,39 +52,6 @@ func (r *Repository) GetTeamInstances(ctx context.Context, teamID uuid.UUID, inc
 		result = append(result, domainInst)
 	}
 	return result, nil
-}
-
-func (r *Repository) GetAllInstances(ctx context.Context) ([]domain.Instance, error) {
-	instances, err := models.Instances.Query().All(ctx, r.executor(ctx))
-	if err != nil {
-		return nil, fmt.Errorf("get all instances: %w", err)
-	}
-	result := make([]domain.Instance, 0, len(instances))
-	for _, inst := range instances {
-		domainInst, err := toDomainInstance(inst)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, domainInst)
-	}
-	return result, nil
-}
-
-func (r *Repository) DeleteInstance(ctx context.Context, id uuid.UUID) error {
-	rows, err := models.Instances.Update(
-		models.UpdateWhere.Instances.ID.EQ(id.String()),
-		models.InstanceSetter{
-			DeletedAt: ToSQLNull(time.Now()),
-		}.UpdateMod(),
-	).Exec(ctx, r.executor(ctx))
-	if err != nil {
-		return fmt.Errorf("delete instance: %w", err)
-	}
-	if rows == 0 {
-		return repository.ErrNotFound
-	}
-
-	return nil
 }
 
 func toDomainInstance(instance *models.Instance) (domain.Instance, error) {
@@ -105,25 +63,31 @@ func toDomainInstance(instance *models.Instance) (domain.Instance, error) {
 	if err != nil {
 		return domain.Instance{}, fmt.Errorf("parse team id: %w", err)
 	}
+	environmentID, err := uuid.Parse(instance.EnvironmentID)
+	if err != nil {
+		return domain.Instance{}, fmt.Errorf("parse environment id: %w", err)
+	}
 
 	return domain.Instance{
-		ID:     id,
-		TeamID: teamID,
-		Index:  int(instance.InstanceNumber),
+		ID:            id,
+		TeamID:        teamID,
+		EnvironmentID: environmentID,
+		Name:          instance.Name,
 		Infra: domain.InfraInstance{
 			ProviderInstanceID: instance.ProviderInstanceID,
 		},
 		CreatedAt: instance.CreatedAt,
+		DeletedAt: SQLNullToPtr(instance.DeletedAt),
 	}, nil
 }
 
-func buildInstanceSetter(instance domain.Instance) (*models.InstanceSetter, error) {
-	setter := &models.InstanceSetter{
+func buildInstanceSetter(instance domain.Instance) *models.InstanceSetter {
+	return &models.InstanceSetter{
 		ID:                 lo.ToPtr(instance.ID.String()),
 		ProviderInstanceID: lo.ToPtr(instance.Infra.ProviderInstanceID),
 		TeamID:             lo.ToPtr(instance.TeamID.String()),
-		InstanceNumber:     lo.ToPtr(int32(instance.Index)),
+		EnvironmentID:      lo.ToPtr(instance.EnvironmentID.String()),
+		Name:               lo.ToPtr(instance.Name),
 		CreatedAt:          lo.Ternary(!instance.CreatedAt.IsZero(), &instance.CreatedAt, nil),
 	}
-	return setter, nil
 }
