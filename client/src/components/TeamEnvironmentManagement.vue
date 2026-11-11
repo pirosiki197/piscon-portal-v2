@@ -33,9 +33,8 @@ const statusLabels: Record<EnvironmentStatus, string> = {
 
 const instances = computed(() => environment.value?.instances ?? [])
 const isReady = computed(() => environment.value?.status === 'ready')
-const canDelete = computed(() =>
-  ['ready', 'failed', 'deleteFailed'].includes(environment.value?.status ?? ''),
-)
+// 作成中のまま止まったチーム環境も作り直せるように、作成中でも削除できる。
+const canDelete = computed(() => !!environment.value && environment.value.status !== 'deleting')
 const mutationError = computed(
   () => create.error.value ?? remove.error.value ?? start.error.value ?? stop.error.value,
 )
