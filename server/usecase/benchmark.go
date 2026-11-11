@@ -24,6 +24,7 @@ type BenchmarkUseCase interface {
 	// キューの先頭のベンチマークを取得し、ステータスを更新する。
 	// 先頭のベンチマークと同じチームの稼働中の問題サーバーのprivate IPを返す。
 	// キューが空の場合はusecase.ErrNotFoundを返す。
+	// 対象サーバーがもう存在しないベンチは、error の結果で終わらせて次のベンチに進む。
 	StartBenchmark(ctx context.Context) (domain.BenchmarkJob, error)
 	// SaveBenchmarkProgress
 	// ベンチマーク実行中のログやスコアを更新して保存する。
@@ -174,8 +175,24 @@ func (u *benchmarkUseCaseImpl) GetBenchmarkLog(ctx context.Context, benchmarkID 
 }
 
 func (u *benchmarkUseCaseImpl) StartBenchmark(ctx context.Context) (domain.BenchmarkJob, error) {
-	var job domain.BenchmarkJob
-	err := u.repo.Transaction(ctx, func(ctx context.Context) error {
+	for {
+		job, started, err := u.startOldestBenchmark(ctx)
+		if err != nil {
+			return domain.BenchmarkJob{}, err
+		}
+		if started {
+			return job, nil
+		}
+	}
+}
+
+// benchmarkTargetGoneMessage は、対象サーバーがもう存在しないベンチに記録するエラーメッセージである。
+const benchmarkTargetGoneMessage = "benchmark target server no longer exists"
+
+// startOldestBenchmark は、待ち行列の先頭のベンチを readying にしてジョブを返す。
+// 対象サーバーがもう存在しなければ、そのベンチを error の結果で終わらせ、started を false にして返す。
+func (u *benchmarkUseCaseImpl) startOldestBenchmark(ctx context.Context) (job domain.BenchmarkJob, started bool, err error) {
+	err = u.repo.Transaction(ctx, func(ctx context.Context) error {
 		bench, err := u.repo.GetOldestQueuedBenchmark(ctx)
 		if errors.Is(err, repository.ErrNotFound) {
 			return ErrNotFound
@@ -184,14 +201,17 @@ func (u *benchmarkUseCaseImpl) StartBenchmark(ctx context.Context) (domain.Bench
 			return fmt.Errorf("get oldest queued benchmark: %w", err)
 		}
 
-		bench.Instance.Infra, err = u.manager.Get(ctx, bench.Instance.Infra.ProviderInstanceID)
+		targets, err := u.manager.GetByIDs(ctx, []string{bench.Instance.Infra.ProviderInstanceID})
 		if err != nil {
 			return fmt.Errorf("get infra instance: %w", err)
 		}
-
-		if bench.Instance.Infra.PrivateIP == nil || *bench.Instance.Infra.PrivateIP == "" {
-			return fmt.Errorf("target instance has no private IP address")
+		target, ok := benchmarkTarget(targets)
+		if !ok {
+			// 先頭のベンチを待ち行列に残すと、後ろのベンチがすべて始められなくなる。
+			return u.finishGoneBenchmark(ctx, bench)
 		}
+		bench.Instance.Infra = target
+
 		instances, err := u.repo.GetTeamInstances(ctx, bench.TeamID, false)
 		if err != nil {
 			return fmt.Errorf("get team instances: %w", err)
@@ -232,13 +252,48 @@ func (u *benchmarkUseCaseImpl) StartBenchmark(ctx context.Context) (domain.Bench
 			return fmt.Errorf("update benchmark: %w", err)
 		}
 
+		started = true
 		return nil
 	})
 	if err != nil {
-		return domain.BenchmarkJob{}, fmt.Errorf("transaction: %w", err)
+		return domain.BenchmarkJob{}, false, fmt.Errorf("transaction: %w", err)
 	}
+	return job, started, nil
+}
 
-	return job, nil
+// benchmarkTarget は、対象サーバーを問い合わせた結果から、ベンチを向けられる対象サーバーを返す。
+// 対象サーバーが見つからないか、private IP を持たなければ false を返す。
+func benchmarkTarget(found []domain.InfraInstance) (domain.InfraInstance, bool) {
+	if len(found) == 0 {
+		return domain.InfraInstance{}, false
+	}
+	target := found[0]
+	if target.Status == domain.InstanceStatusDeleted || target.PrivateIP == nil || *target.PrivateIP == "" {
+		return domain.InfraInstance{}, false
+	}
+	return target, true
+}
+
+// finishGoneBenchmark は、対象サーバーがもう存在しないベンチを error の結果で終わらせる。
+func (u *benchmarkUseCaseImpl) finishGoneBenchmark(ctx context.Context, bench domain.Benchmark) error {
+	now := time.Now()
+	result := domain.BenchmarkResultStatusError
+	errorMes := benchmarkTargetGoneMessage
+	err := u.repo.UpdateBenchmark(ctx, bench.ID, domain.Benchmark{
+		ID:         bench.ID,
+		Instance:   bench.Instance,
+		TeamID:     bench.TeamID,
+		UserID:     bench.UserID,
+		Status:     domain.BenchmarkStatusFinished,
+		CreatedAt:  bench.CreatedAt,
+		FinishedAt: &now,
+		Result:     &result,
+		ErrorMes:   &errorMes,
+	})
+	if err != nil {
+		return fmt.Errorf("finish benchmark whose target is gone: %w", err)
+	}
+	return nil
 }
 
 func (u *benchmarkUseCaseImpl) SaveBenchmarkProgress(ctx context.Context, benchID uuid.UUID, benchLog domain.BenchmarkLog, score int64, startedAt time.Time) error {

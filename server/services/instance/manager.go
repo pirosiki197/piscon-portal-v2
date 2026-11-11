@@ -11,9 +11,6 @@ import (
 
 // Manager is an interface for managing infrastructure instances.
 type Manager interface {
-	// Get retrieves an infrastructure instance by its provider ID.
-	// Returns the instance or an error if the retrieval fails.
-	Get(ctx context.Context, id string) (domain.InfraInstance, error)
 	// GetByIDs retrieves infrastructure instances by their provider instance IDs.
 	// Instances that no longer exist are not included.
 	GetByIDs(ctx context.Context, ids []string) ([]domain.InfraInstance, error)

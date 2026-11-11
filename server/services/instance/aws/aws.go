@@ -60,28 +60,6 @@ var pisconTagFilter = types.Filter{
 	Values: []string{"true"},
 }
 
-func (a *Client) Get(ctx context.Context, id string) (domain.InfraInstance, error) {
-	res, err := a.client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		InstanceIds: []string{id},
-	})
-	if err != nil {
-		return domain.InfraInstance{}, fmt.Errorf("describe instance: %w", err)
-	}
-
-	if len(res.Reservations) == 0 || len(res.Reservations[0].Instances) == 0 {
-		return domain.InfraInstance{}, fmt.Errorf("instance not found: %s", id)
-	}
-
-	instance := res.Reservations[0].Instances[0]
-
-	return domain.InfraInstance{
-		ProviderInstanceID: *instance.InstanceId,
-		PrivateIP:          instance.PrivateIpAddress,
-		PublicIP:           instance.PublicIpAddress,
-		Status:             convertInstanceState(instance.State.Name),
-	}, nil
-}
-
 func (a *Client) GetByIDs(ctx context.Context, ids []string) ([]domain.InfraInstance, error) {
 	if len(ids) == 0 {
 		return nil, nil

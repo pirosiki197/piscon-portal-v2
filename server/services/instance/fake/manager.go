@@ -122,24 +122,6 @@ func (m *Manager) createInstance() (string, error) {
 	return instance.ProviderInstanceID, nil
 }
 
-func (m *Manager) Get(_ context.Context, id string) (domain.InfraInstance, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	instances, err := m.readInstances()
-	if err != nil {
-		return domain.InfraInstance{}, fmt.Errorf("read instances: %w", err)
-	}
-
-	instance, ok := lo.Find(instances, func(i domain.InfraInstance) bool {
-		return i.ProviderInstanceID == id
-	})
-	if !ok {
-		return domain.InfraInstance{}, fmt.Errorf("instance not found: %s", id)
-	}
-	return instance, nil
-}
-
 func (m *Manager) GetByIDs(_ context.Context, ids []string) ([]domain.InfraInstance, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

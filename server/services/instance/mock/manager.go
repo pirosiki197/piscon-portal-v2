@@ -42,45 +42,6 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
 }
 
-// Get mocks base method.
-func (m *MockManager) Get(ctx context.Context, id string) (domain.InfraInstance, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", ctx, id)
-	ret0, _ := ret[0].(domain.InfraInstance)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockManagerMockRecorder) Get(ctx, id any) *MockManagerGetCall {
-	mr.mock.ctrl.T.Helper()
-	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockManager)(nil).Get), ctx, id)
-	return &MockManagerGetCall{Call: call}
-}
-
-// MockManagerGetCall wrap *gomock.Call
-type MockManagerGetCall struct {
-	*gomock.Call
-}
-
-// Return rewrite *gomock.Call.Return
-func (c *MockManagerGetCall) Return(arg0 domain.InfraInstance, arg1 error) *MockManagerGetCall {
-	c.Call = c.Call.Return(arg0, arg1)
-	return c
-}
-
-// Do rewrite *gomock.Call.Do
-func (c *MockManagerGetCall) Do(f func(context.Context, string) (domain.InfraInstance, error)) *MockManagerGetCall {
-	c.Call = c.Call.Do(f)
-	return c
-}
-
-// DoAndReturn rewrite *gomock.Call.DoAndReturn
-func (c *MockManagerGetCall) DoAndReturn(f func(context.Context, string) (domain.InfraInstance, error)) *MockManagerGetCall {
-	c.Call = c.Call.DoAndReturn(f)
-	return c
-}
-
 // GetByIDs mocks base method.
 func (m *MockManager) GetByIDs(ctx context.Context, ids []string) ([]domain.InfraInstance, error) {
 	m.ctrl.T.Helper()
