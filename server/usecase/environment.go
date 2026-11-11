@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/traPtitech/piscon-portal-v2/server/domain"
@@ -104,7 +106,7 @@ func (u *environmentUseCaseImpl) CreateEnvironment(ctx context.Context, teamID u
 	// 一意制約が、同時に作られた 2 つ目のチーム環境を弾く。記録できなかったチーム環境は、プロバイダーからも消す。
 	err = u.repo.CreateEnvironment(ctx, env)
 	if err != nil {
-		_ = u.envManager.Delete(ctx, env.ProviderEnvironmentID)
+		u.deleteUnrecordedEnvironment(ctx, env.ProviderEnvironmentID)
 		if errors.Is(err, repository.ErrAlreadyExists) {
 			return TeamEnvironment{}, NewUseCaseErrorFromMsg("team already has an environment")
 		}
@@ -116,6 +118,18 @@ func (u *environmentUseCaseImpl) CreateEnvironment(ctx context.Context, teamID u
 		return TeamEnvironment{}, err
 	}
 	return u.toTeamEnvironment(synced), nil
+}
+
+// deleteUnrecordedEnvironment は、DB に記録できなかったチーム環境の削除をプロバイダーに依頼する。
+// 依頼できなければ、運営が手で片付けられるようにログに残す。
+func (u *environmentUseCaseImpl) deleteUnrecordedEnvironment(ctx context.Context, providerEnvironmentID string) {
+	// リクエストが打ち切られても、課金され続けるチーム環境を残さないように削除は続ける。
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+	defer cancel()
+	if err := u.envManager.Delete(ctx, providerEnvironmentID); err != nil {
+		slog.ErrorContext(ctx, "failed to delete unrecorded environment",
+			"providerEnvironmentID", providerEnvironmentID, "error", err)
+	}
 }
 
 func (u *environmentUseCaseImpl) DeleteEnvironment(ctx context.Context, teamID uuid.UUID) error {
