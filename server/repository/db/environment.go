@@ -123,6 +123,12 @@ func (r *Repository) CreateInstances(ctx context.Context, instances []domain.Ins
 }
 
 func (r *Repository) DeleteEnvironment(ctx context.Context, id uuid.UUID) error {
+	if ctx.Value(executorCtxKey) == nil {
+		return r.Transaction(ctx, func(ctx context.Context) error {
+			return r.DeleteEnvironment(ctx, id)
+		})
+	}
+
 	now := ToSQLNull(time.Now())
 	_, err := models.Environments.Update(
 		models.UpdateWhere.Environments.ID.EQ(id.String()),
