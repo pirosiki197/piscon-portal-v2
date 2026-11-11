@@ -49,7 +49,7 @@ const user = computed(() => getUserById(bench?.userId))
       </div>
       <div class="bench-detail-element">
         <div class="bench-detail-label">対象サーバー</div>
-        <div class="bench-detail-content">サーバー{{ instance?.serverId }}</div>
+        <div class="bench-detail-content">{{ instance?.name }}</div>
       </div>
       <div class="bench-detail-element">
         <div class="bench-detail-label">リクエスト時刻</div>

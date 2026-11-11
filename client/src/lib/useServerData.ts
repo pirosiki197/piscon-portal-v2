@@ -55,63 +55,64 @@ export const useTeam = (teamId: string) =>
     queryFn: () => api.GET('/teams/{teamId}', { params: { path: { teamId } } }).then((r) => r.data),
   })
 
-export const useCreateTeamInstance = () => {
+// API のエラーレスポンスを Error にする。message があればそれを使う。
+const toError = (error: unknown) =>
+  new Error((error as { message?: string } | undefined)?.message ?? '操作に失敗しました')
+
+// チーム環境がなければ null になる。
+export const useTeamEnvironment = (teamId: string) =>
+  useQuery({
+    queryKey: ['team-environment', teamId],
+    queryFn: () =>
+      api.GET('/teams/{teamId}/environment', { params: { path: { teamId } } }).then((r) => {
+        if (r.response.status === 404) return null
+        if (r.error !== undefined) throw toError(r.error)
+        return r.data ?? null
+      }),
+  })
+
+const useTeamEnvironmentMutation = (
+  mutationFn: (teamId: string) => Promise<{ error?: unknown }>,
+) => {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (params: { teamId: string }) =>
-      api.POST('/teams/{teamId}/instances', {
-        params: { path: params },
-      }),
-    onSuccess: (_, params) => {
+    mutationFn: async (params: { teamId: string }) => {
+      const { error } = await mutationFn(params.teamId)
+      if (error !== undefined) throw toError(error)
+    },
+    onSettled: (_, __, params) => {
+      void client.invalidateQueries({ queryKey: ['team-environment', params.teamId] })
       void client.invalidateQueries({ queryKey: ['team-instances', params.teamId] })
       void client.invalidateQueries({ queryKey: ['instances'] })
     },
   })
 }
 
-export const useStartTeamInstance = () => {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: (params: { teamId: string; instanceId: string }) =>
-      api.PATCH('/teams/{teamId}/instances/{instanceId}', {
-        params: { path: params },
-        body: { operation: 'start' },
-      }),
-    onSuccess: (_, params) => {
-      void client.invalidateQueries({ queryKey: ['team-instances', params.teamId] })
-      void client.invalidateQueries({ queryKey: ['instances'] })
-    },
-  })
-}
+export const useCreateTeamEnvironment = () =>
+  useTeamEnvironmentMutation((teamId) =>
+    api.POST('/teams/{teamId}/environment', { params: { path: { teamId } } }),
+  )
 
-export const useStopTeamInstance = () => {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: (params: { teamId: string; instanceId: string }) =>
-      api.PATCH('/teams/{teamId}/instances/{instanceId}', {
-        params: { path: params },
-        body: { operation: 'stop' },
-      }),
-    onSuccess: (_, params) => {
-      void client.invalidateQueries({ queryKey: ['team-instances', params.teamId] })
-      void client.invalidateQueries({ queryKey: ['instances'] })
-    },
-  })
-}
+export const useDeleteTeamEnvironment = () =>
+  useTeamEnvironmentMutation((teamId) =>
+    api.DELETE('/teams/{teamId}/environment', { params: { path: { teamId } } }),
+  )
 
-export const useDeleteTeamInstance = () => {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: (params: { teamId: string; instanceId: string }) =>
-      api.DELETE('/teams/{teamId}/instances/{instanceId}', {
-        params: { path: params },
-      }),
-    onSuccess: (_, params) => {
-      void client.invalidateQueries({ queryKey: ['team-instances', params.teamId] })
-      void client.invalidateQueries({ queryKey: ['instances'] })
-    },
-  })
-}
+export const useStartTeamEnvironment = () =>
+  useTeamEnvironmentMutation((teamId) =>
+    api.PATCH('/teams/{teamId}/environment', {
+      params: { path: { teamId } },
+      body: { operation: 'start' },
+    }),
+  )
+
+export const useStopTeamEnvironment = () =>
+  useTeamEnvironmentMutation((teamId) =>
+    api.PATCH('/teams/{teamId}/environment', {
+      params: { path: { teamId } },
+      body: { operation: 'stop' },
+    }),
+  )
 
 export const useCreateTeam = () => {
   const client = useQueryClient()

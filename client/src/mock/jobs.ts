@@ -2,11 +2,14 @@ import {
   benchmarks,
   dummyInstances,
   dummyTeams,
+  environments,
   instances,
   userIds,
   benchmarkReadyingAt,
 } from '@/mock/data'
 import { uuidv7 } from 'uuidv7'
+
+const MOCK_SERVER_NAMES = ['Webapp1', 'Webapp2', 'Webapp3']
 
 const BENCHMARKER_CONCURRENCY = 3
 
@@ -104,7 +107,7 @@ export const startJobs = () => {
     for (const i of buildingInstances) {
       if (Math.random() < 0.2) {
         i.status = 'running'
-        i.publicIPAddress = `203.0.113.${i.serverId}`
+        i.publicIPAddress = `203.0.113.${instances.indexOf(i) + 1}`
       }
     }
 
@@ -112,7 +115,7 @@ export const startJobs = () => {
     for (const i of startingInstances) {
       if (Math.random() < 0.3) {
         i.status = 'running'
-        i.publicIPAddress = `203.0.113.${i.serverId}`
+        i.publicIPAddress = `203.0.113.${instances.indexOf(i) + 1}`
       }
     }
 
@@ -130,6 +133,36 @@ export const startJobs = () => {
         i.status = 'deleted'
         i.publicIPAddress = ''
         i.privateIPAddress = ''
+      }
+    }
+  }, 500)
+
+  // チーム環境の状態を定期的に更新する
+  setInterval(() => {
+    for (const env of environments.filter((e) => e.status === 'creating')) {
+      if (Math.random() < 0.2) {
+        const created = MOCK_SERVER_NAMES.map((name, n) => ({
+          id: uuidv7(),
+          teamId: env.teamId,
+          name,
+          privateIPAddress: `192.168.1.${instances.length + n + 1}`,
+          publicIPAddress: '',
+          status: 'building' as const,
+          createdAt: new Date().toISOString(),
+        }))
+        instances.push(...created)
+        env.instanceIds = created.map((i) => i.id)
+        env.status = 'ready'
+      }
+    }
+    for (const env of environments.filter((e) => e.status === 'deleting')) {
+      if (Math.random() < 0.2) {
+        for (const i of instances.filter((i) => env.instanceIds.includes(i.id))) {
+          i.status = 'deleted'
+          i.publicIPAddress = ''
+          i.privateIPAddress = ''
+        }
+        environments.splice(environments.indexOf(env), 1)
       }
     }
   }, 500)

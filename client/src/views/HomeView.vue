@@ -96,8 +96,8 @@ useInterval(() => {
         <NavigationCard
           v-if="myTeam"
           icon="mdi:server"
-          title="インスタンス管理"
-          description="インスタンスの起動・停止・削除"
+          title="チーム環境"
+          description="チーム環境の作成・停止・起動・削除"
           to="/instances"
         />
 

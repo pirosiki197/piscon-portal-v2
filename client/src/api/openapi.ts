@@ -148,7 +148,6 @@ export interface paths {
     /**
      * チーム情報更新
      * @description チーム情報やメンバー、GitHub IDを更新します、指定されたフィールドのみを変更します。
-     *
      */
     patch: operations['patchTeam']
     trace?: never
@@ -166,39 +165,43 @@ export interface paths {
      */
     get: operations['getTeamInstances']
     put?: never
-    /**
-     * インスタンス起動
-     * @description インスタンスを起動してチームに追加します
-     */
-    post: operations['createTeamInstance']
+    post?: never
     delete?: never
     options?: never
     head?: never
     patch?: never
     trace?: never
   }
-  '/teams/{teamId}/instances/{instanceId}': {
+  '/teams/{teamId}/environment': {
     parameters: {
       query?: never
       header?: never
       path?: never
       cookie?: never
     }
-    get?: never
-    put?: never
-    post?: never
     /**
-     * インスタンス削除
-     * @description インスタンスを削除します
+     * チーム環境取得
+     * @description チームの削除されていないチーム環境を取得します。チーム環境がなければ404を返します
      */
-    delete: operations['deleteTeamInstance']
+    get: operations['getTeamEnvironment']
+    put?: never
+    /**
+     * チーム環境作成
+     * @description チーム環境の作成を始めます。作成の完了は待ちません
+     */
+    post: operations['createTeamEnvironment']
+    /**
+     * チーム環境削除
+     * @description チーム環境の削除を始めます。削除の完了は待ちません
+     */
+    delete: operations['deleteTeamEnvironment']
     options?: never
     head?: never
     /**
-     * インスタンス状態変更
-     * @description インスタンスの状態を変更します
+     * チーム環境の停止・起動
+     * @description チーム環境のすべてのサーバーを停止または起動します
      */
-    patch: operations['patchTeamInstance']
+    patch: operations['patchTeamEnvironment']
     trace?: never
   }
   '/instances': {
@@ -257,7 +260,6 @@ export interface paths {
      * @description ベンチマーク待ちのキューを取得します。
      *     createdAtの昇順になっており、現在実行中のベンチマークと、実行待ちのベンチマークが含まれます。
      *     0件の場合も200で空配列が返ります。
-     *
      */
     get: operations['getBenchmarkQueue']
     put?: never
@@ -319,7 +321,6 @@ export interface paths {
      * ベンチマーク結果取得
      * @description ベンチマークの結果を取得します。
      *     管理者のみがアクセス可能で、競技者用ログとは別に管理者用ログも含まれます。
-     *
      */
     get: operations['getBenchmarkResult']
     put?: never
@@ -343,7 +344,7 @@ export interface paths {
     }
     /**
      * 全てのスコア取得
-     * @description 全てのベンチマークのスコアをチームごとに取得します (0件の場合も200で空配列が返ります)。スコアは古い順に並んでいます。チームの順番は任意です。
+     * @description 全てのpassしたベンチマークのスコアをチームごとに取得します (0件の場合も200で空配列が返ります)。スコアは古い順に並んでいます。チームの順番は任意です。
      */
     get: operations['getScores']
     put?: never
@@ -365,8 +366,8 @@ export interface paths {
      * ランキング取得
      * @description ベンチマークのスコアランキングを取得します。1位から順に並んでいます。
      *     同じスコアの場合は、ベンチマーク実行日時(createdAt)が早い順に並べます。
-     *      0件の場合も200で空配列が返ります
-     *
+     *     passしたベンチマークのみがランキングに含まれます。
+     *      0件の場合も200で空配列が返ります.
      */
     get: operations['getRanking']
     put?: never
@@ -452,18 +453,42 @@ export interface components {
       id: components['schemas']['InstanceId']
       teamId: components['schemas']['TeamId']
       /**
-       * @description サーバーのID。チームごとに1から始まる。表示用。
-       *     新しくインスタンスを起動する場合は、1以上の現在使われていない整数が採用される。
-       *     インスタンスを削除したら、そのIDは使用されていないものとし、再利用できる。
-       *
-       * @example 1
+       * @description サーバーの名前。環境テンプレートでの論理 ID で、1 つのチーム環境の中で一意。表示用
+       * @example Webapp
        */
-      serverId: number
+      name: string
       /** @description パブリックIPアドレス。未割り当て・停止・削除などで取得できない場合は空文字を返します。停止後の起動時には新しいアドレスが割り振られます。 */
       publicIPAddress: components['schemas']['IPAddress']
       /** @description プライベートIPアドレス。停止中も保持されます。未割り当て・削除などで取得できない場合は空文字を返します。 */
       privateIPAddress: components['schemas']['IPAddress']
       status: components['schemas']['InstanceStatus']
+      /**
+       * Format: date-time
+       * @example 2021-01-01T00:00:00Z
+       */
+      createdAt: string
+    }
+    /**
+     * Format: uuid
+     * @example 00000000-0000-0000-0000-000000000000
+     */
+    EnvironmentId: string
+    /**
+     * @example ready
+     * @enum {string}
+     */
+    EnvironmentStatus: 'creating' | 'ready' | 'failed' | 'deleting' | 'deleteFailed'
+    /** @description チームに割り当てたサーバー一式 */
+    Environment: {
+      id: components['schemas']['EnvironmentId']
+      teamId: components['schemas']['TeamId']
+      status: components['schemas']['EnvironmentStatus']
+      /** @description status が failed か deleteFailed のときの理由 */
+      failureReason?: string
+      /** @description チーム環境のサーバーを名前の順に並べたもの。status が ready になるまでは空 */
+      instances: components['schemas']['Instance'][]
+      /** @description ベンチの対象が問題で固定されているときの、対象サーバーの ID。チームが対象を選ぶ問題では含まれない */
+      benchTargetInstanceId?: components['schemas']['InstanceId']
       /**
        * Format: date-time
        * @example 2021-01-01T00:00:00Z
@@ -535,7 +560,6 @@ export interface components {
      *     - readying: ベンチマークキューから取り出され、実行が始まるのを待っている
      *     - running: ベンチマークが実行されている
      *     - finished: ベンチマークが終了している
-     *
      * @example running
      * @enum {string}
      */
@@ -737,8 +761,6 @@ export interface components {
   parameters: {
     /** @description チームID */
     teamId: components['schemas']['TeamId']
-    /** @description インスタンスID */
-    instanceId: components['schemas']['InstanceId']
     /** @description ベンチマークID */
     benchmarkId: components['schemas']['BenchmarkId']
     /** @description ベンチマークのステータス。指定が無い場合は全て */
@@ -1039,7 +1061,7 @@ export interface operations {
       500: components['responses']['InternalServerError']
     }
   }
-  createTeamInstance: {
+  getTeamEnvironment: {
     parameters: {
       query?: never
       header?: never
@@ -1051,16 +1073,43 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description インスタンスの起動に成功 */
+      /** @description チーム環境の取得に成功 */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Environment']
+        }
+      }
+      401: components['responses']['Unauthorized']
+      403: components['responses']['Forbidden']
+      404: components['responses']['NotFound']
+      500: components['responses']['InternalServerError']
+    }
+  }
+  createTeamEnvironment: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description チームID */
+        teamId: components['parameters']['teamId']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description チーム環境の作成の開始に成功 */
       201: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Instance']
+          'application/json': components['schemas']['Environment']
         }
       }
-      /** @description インスタンス数の上限に達しているなど */
+      /** @description チームにチーム環境がすでにあるなど */
       400: {
         headers: {
           [name: string]: unknown
@@ -1075,26 +1124,33 @@ export interface operations {
       500: components['responses']['InternalServerError']
     }
   }
-  deleteTeamInstance: {
+  deleteTeamEnvironment: {
     parameters: {
       query?: never
       header?: never
       path: {
         /** @description チームID */
         teamId: components['parameters']['teamId']
-        /** @description インスタンスID */
-        instanceId: components['parameters']['instanceId']
       }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description インスタンスの削除に成功 */
+      /** @description チーム環境の削除の開始に成功 */
       200: {
         headers: {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description チームのベンチマークが待機中か実行中であるなど */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorBadRequest']
+        }
       }
       401: components['responses']['Unauthorized']
       403: components['responses']['Forbidden']
@@ -1102,15 +1158,13 @@ export interface operations {
       500: components['responses']['InternalServerError']
     }
   }
-  patchTeamInstance: {
+  patchTeamEnvironment: {
     parameters: {
       query?: never
       header?: never
       path: {
         /** @description チームID */
         teamId: components['parameters']['teamId']
-        /** @description インスタンスID */
-        instanceId: components['parameters']['instanceId']
       }
       cookie?: never
     }
@@ -1122,14 +1176,14 @@ export interface operations {
       }
     }
     responses: {
-      /** @description インスタンスの操作に成功 */
+      /** @description チーム環境の操作に成功 */
       200: {
         headers: {
           [name: string]: unknown
         }
         content?: never
       }
-      /** @description 操作後も現在と同じステータスである、無効な操作である。 */
+      /** @description チーム環境が ready でない、無効な操作であるなど */
       400: {
         headers: {
           [name: string]: unknown
@@ -1425,10 +1479,11 @@ export interface operations {
         }
         content?: never
       }
-      /** @description - 指定された部員が存在しない。
+      /**
+       * @description - 指定された部員が存在しない。
        *     - 配列の長さが0。
        *     - 自分が含まれていない。
-       *      */
+       */
       400: {
         headers: {
           [name: string]: unknown

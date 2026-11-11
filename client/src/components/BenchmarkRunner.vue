@@ -8,20 +8,23 @@ import { computed, ref, useId, watch } from 'vue'
 const id = useId()
 
 type Bench = components['schemas']['BenchmarkListItem']
-type Instance = components['schemas']['Instance']
+type Environment = components['schemas']['Environment']
 const props = defineProps<{
   teamId: string
   benches: Bench[]
-  instances: Instance[]
+  environment: Environment | null
 }>()
 
 const { mutate: enqueueRequest, isPending } = useEnqueueBenchmark()
 
+// 問題が対象サーバーを固定しているときは、そのサーバーだけを選べる。
+const fixedTargetId = computed(() => props.environment?.benchTargetInstanceId)
 const instances = computed(() =>
-  props.instances
+  (props.environment?.instances ?? [])
     .filter((i) => i.status === 'running')
+    .filter((i) => fixedTargetId.value === undefined || i.id === fixedTargetId.value)
     .map((i) => ({
-      label: `サーバー${i.serverId} (${i.privateIPAddress})`,
+      label: `${i.name} (${i.privateIPAddress})`,
       value: i.id,
     })),
 )
@@ -29,11 +32,17 @@ const canEnqueue = computed(() => props.benches.every((b) => b.status === 'finis
 
 const targetInstanceId = ref<string | null>(null)
 
-watch(instances, (options) => {
-  if (!options.some((i) => i.value === targetInstanceId.value)) {
-    targetInstanceId.value = null
-  }
-})
+watch(
+  instances,
+  (options) => {
+    if (fixedTargetId.value !== undefined) {
+      targetInstanceId.value = options[0]?.value ?? null
+    } else if (!options.some((i) => i.value === targetInstanceId.value)) {
+      targetInstanceId.value = null
+    }
+  },
+  { immediate: true },
+)
 
 const enqueueBenchmark = (instanceId: string | null) => {
   if (
@@ -52,7 +61,10 @@ const enqueueBenchmark = (instanceId: string | null) => {
   <div class="benchmark-runner-container">
     <div class="benchmark-runner-title">新しくベンチマークを実行する</div>
     <div class="benchmark-runner-content">
-      <div>
+      <div v-if="fixedTargetId !== undefined" class="benchmark-runner-fixed-target">
+        {{ instances[0]?.label ?? '対象サーバーが起動していません' }}
+      </div>
+      <div v-else>
         <Select
           v-model="targetInstanceId"
           :options="instances"
@@ -115,6 +127,11 @@ const enqueueBenchmark = (instanceId: string | null) => {
 
 .benchmark-runner-instance-selector {
   width: 100%;
+}
+
+.benchmark-runner-fixed-target {
+  align-self: center;
+  font-weight: 600;
 }
 
 .benchmark-runner-button {

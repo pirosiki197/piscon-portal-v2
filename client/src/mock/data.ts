@@ -65,7 +65,7 @@ export const instances: paths['/teams/{teamId}/instances']['get']['responses']['
     {
       id: instanceIds['ikura-cp-1'],
       teamId: teamIds['ikura-cp'],
-      serverId: 1,
+      name: 'Webapp1',
       privateIPAddress: '192.168.0.1',
       publicIPAddress: '203.0.113.1',
       status: 'running',
@@ -74,7 +74,7 @@ export const instances: paths['/teams/{teamId}/instances']['get']['responses']['
     {
       id: instanceIds['ikura-cp-2'],
       teamId: teamIds['ikura-cp'],
-      serverId: 2,
+      name: 'Webapp2',
       privateIPAddress: '192.168.0.2',
       publicIPAddress: '',
       status: 'building',
@@ -83,7 +83,7 @@ export const instances: paths['/teams/{teamId}/instances']['get']['responses']['
     {
       id: instanceIds['ikura-cp-3'],
       teamId: teamIds['ikura-cp'],
-      serverId: 3,
+      name: 'Webapp3',
       privateIPAddress: '192.168.0.3',
       publicIPAddress: '',
       status: 'stopped',
@@ -92,7 +92,7 @@ export const instances: paths['/teams/{teamId}/instances']['get']['responses']['
     {
       id: instanceIds['piropiro-1'],
       teamId: teamIds['piropiro'],
-      serverId: 1,
+      name: 'Webapp1',
       privateIPAddress: '192.168.0.4',
       publicIPAddress: '203.0.113.4',
       status: 'running',
@@ -101,13 +101,36 @@ export const instances: paths['/teams/{teamId}/instances']['get']['responses']['
     {
       id: '01943f4c-3662-7cac-9674-2b0a39da6726',
       teamId: teamIds['ikura-cp'],
-      serverId: 1,
+      name: 'Webapp1',
       privateIPAddress: '',
       publicIPAddress: '',
       status: 'deleted',
       createdAt: justBefore.toISOString(),
     },
   ]
+
+// モックのチーム環境。サーバーは instances に入れ、ID で参照する。
+export type MockEnvironment = Omit<components['schemas']['Environment'], 'instances'> & {
+  instanceIds: string[]
+}
+
+export const environments: MockEnvironment[] = [
+  {
+    id: '01943f50-0000-7000-8000-000000000001',
+    teamId: teamIds['ikura-cp'],
+    status: 'ready',
+    instanceIds: [instanceIds['ikura-cp-1'], instanceIds['ikura-cp-2'], instanceIds['ikura-cp-3']],
+    createdAt: justBefore.toISOString(),
+  },
+  {
+    id: '01943f50-0000-7000-8000-000000000002',
+    teamId: teamIds.piropiro,
+    status: 'ready',
+    instanceIds: [instanceIds['piropiro-1']],
+    benchTargetInstanceId: instanceIds['piropiro-1'],
+    createdAt: justBefore.toISOString(),
+  },
+]
 
 export const benchmarks: components['schemas']['BenchmarkAdminResult'][] = [
   {
@@ -247,7 +270,7 @@ type Instance = components['schemas']['Instance']
 export const dummyInstances: Instance[] = [...Array(DUMMY_TEAM_COUNT).keys()].map((i) => ({
   id: uuidv7(),
   teamId: dummyTeams[i].id,
-  serverId: 1,
+  name: 'Webapp1',
   privateIPAddress: `192.168.0.${i + 10}`,
   publicIPAddress: `203.0.113.${i + 10}`,
   status: 'running',
@@ -255,5 +278,14 @@ export const dummyInstances: Instance[] = [...Array(DUMMY_TEAM_COUNT).keys()].ma
 }))
 
 instances.push(...dummyInstances)
+environments.push(
+  ...dummyInstances.map((instance) => ({
+    id: uuidv7(),
+    teamId: instance.teamId,
+    status: 'ready' as const,
+    instanceIds: [instance.id],
+    createdAt: justBefore.toISOString(),
+  })),
+)
 
 export const benchmarkReadyingAt: { id: string; readyingAt: Date }[] = []

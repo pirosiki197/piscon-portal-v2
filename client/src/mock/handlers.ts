@@ -3,7 +3,16 @@ import { uuidv7 } from 'uuidv7'
 import { createOpenApiHttp } from 'openapi-msw'
 import type { components, paths } from '@/api/openapi'
 import { apiBaseUrl } from '@/api'
-import { users, teams, instances, benchmarks, docs, updateDocs } from './data'
+import {
+  users,
+  teams,
+  instances,
+  environments,
+  benchmarks,
+  docs,
+  updateDocs,
+  type MockEnvironment,
+} from './data'
 import { startJobs } from '@/mock/jobs'
 
 const http = createOpenApiHttp<paths>({
@@ -13,6 +22,16 @@ const http = createOpenApiHttp<paths>({
 startJobs()
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const toEnvironment = ({
+  instanceIds,
+  ...env
+}: MockEnvironment): components['schemas']['Environment'] => ({
+  ...env,
+  instances: instances
+    .filter((i) => instanceIds.includes(i.id))
+    .sort((a, b) => a.name.localeCompare(b.name)),
+})
 
 export const handlers = [
   http.get(`/oauth2/code`, () => {
@@ -107,48 +126,48 @@ export const handlers = [
     const res = instances.filter((i) => i.teamId === teamId)
     return HttpResponse.json(res)
   }),
-  http.post('/teams/{teamId}/instances', async (c) => {
-    await sleep(3000)
+  http.get('/teams/{teamId}/environment', async (c) => {
+    await sleep(100)
+    const env = environments.find((e) => e.teamId === c.params.teamId)
+    if (env === undefined) return HttpResponse.json({ message: 'Not found' }, { status: 404 })
+    return HttpResponse.json(toEnvironment(env))
+  }),
+  http.post('/teams/{teamId}/environment', async (c) => {
+    await sleep(1000)
     const teamId = c.params.teamId
-    const newServerId = instances.reduce((max, i) => Math.max(max, i.serverId), 0) + 1
-    const newInstance: components['schemas']['Instance'] = {
+    if (environments.some((e) => e.teamId === teamId)) {
+      return HttpResponse.json({ message: 'team already has an environment' }, { status: 400 })
+    }
+    const env: MockEnvironment = {
       id: uuidv7(),
       teamId,
-      serverId: newServerId,
-      privateIPAddress: `192.168.0.${newServerId}`,
-      publicIPAddress: '',
-      status: 'building',
+      status: 'creating',
+      instanceIds: [],
       createdAt: new Date().toISOString(),
     }
-    instances.push(newInstance)
+    environments.push(env)
+    return HttpResponse.json(toEnvironment(env), { status: 201 })
   }),
-  http.delete('/teams/{teamId}/instances/{instanceId}', async (c) => {
-    await sleep(2000)
-    const teamId = c.params.teamId
-    const instanceId = c.params.instanceId
-    const index = instances.findIndex((i) => i.teamId === teamId && i.id === instanceId)
-    instances[index] = { ...instances[index], status: 'deleting' }
+  http.delete('/teams/{teamId}/environment', async (c) => {
+    await sleep(1000)
+    const env = environments.find((e) => e.teamId === c.params.teamId)
+    if (env === undefined) return HttpResponse.json({ message: 'Not found' }, { status: 404 })
+    env.status = 'deleting'
+    return HttpResponse.json({}, { status: 200 })
   }),
-  http.patch('/teams/{teamId}/instances/{instanceId}', async (c) => {
-    await sleep(2000)
-    const teamId = c.params.teamId
-    const instanceId = c.params.instanceId
-    const index = instances.findIndex((i) => i.teamId === teamId && i.id === instanceId)
-    const body = await c.request.json()
-    const operation = body.operation
-    if (operation === 'start') {
-      if (instances[index].status === 'stopped') {
-        instances[index] = { ...instances[index], status: 'starting' }
-        return HttpResponse.json({}, { status: 200 })
-      }
+  http.patch('/teams/{teamId}/environment', async (c) => {
+    await sleep(1000)
+    const env = environments.find((e) => e.teamId === c.params.teamId)
+    if (env === undefined) return HttpResponse.json({ message: 'Not found' }, { status: 404 })
+    if (env.status !== 'ready') {
+      return HttpResponse.json({ message: 'environment is not ready' }, { status: 400 })
     }
-    if (operation === 'stop') {
-      if (instances[index].status === 'running') {
-        instances[index] = { ...instances[index], status: 'stopping' }
-        return HttpResponse.json({}, { status: 200 })
-      }
+    const { operation } = await c.request.json()
+    for (const instance of instances.filter((i) => env.instanceIds.includes(i.id))) {
+      if (operation === 'start' && instance.status === 'stopped') instance.status = 'starting'
+      if (operation === 'stop' && instance.status === 'running') instance.status = 'stopping'
     }
-    return HttpResponse.json({ message: 'Bad request' }, { status: 400 })
+    return HttpResponse.json({}, { status: 200 })
   }),
   http.get(`/instances`, async () => {
     await sleep(1000)

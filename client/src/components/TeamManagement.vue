@@ -126,10 +126,10 @@ const removeGitHubId = (id: string) => {
           <div class="github-id-management-card-title">GitHub ID 管理</div>
           <div class="github-id-management-card-description">
             チームメンバーの GitHub ID を追加すると、GitHub
-            に登録されている公開鍵が自動的にインスタンスに登録されます
+            に登録されている公開鍵が自動的にチーム環境のサーバーに登録されます
           </div>
           <div class="github-id-management-card-description">
-            ※設定が反映されるのは新しく作成されたインスタンスのみです
+            ※設定が反映されるのは新しく作成したチーム環境だけです
           </div>
         </div>
         <div>

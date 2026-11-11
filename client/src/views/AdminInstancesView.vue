@@ -1,27 +1,13 @@
 <script setup lang="ts">
-import InstanceCardList from '@/components/InstanceCardList.vue'
-import MainSwitch from '@/components/MainSwitch.vue'
 import PageTitle from '@/components/PageTitle.vue'
-import { useAllInstances, useTeamsData } from '@/lib/useServerData'
+import TeamEnvironmentManagement from '@/components/TeamEnvironmentManagement.vue'
+import { useTeamsData } from '@/lib/useServerData'
 import { useUsers } from '@/lib/useUsers'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 
-const { data: instances } = useAllInstances()
 const { data: teams } = useTeamsData()
 const { getUserById } = useUsers()
-
-const showDeleted = ref(false)
-
-const visibleInstances = computed(() =>
-  instances.value?.filter((i) => showDeleted.value || i.status !== 'deleted'),
-)
-const instancesByTeams = computed(() =>
-  teams.value?.map((team) => ({
-    team,
-    instances: visibleInstances.value?.filter((i) => i.teamId === team.id) || [],
-  })),
-)
 
 // true -> closed, false -> open
 const collapseStates = ref<Record<string, boolean>>({})
@@ -29,33 +15,29 @@ const collapseStates = ref<Record<string, boolean>>({})
 
 <template>
   <main class="admin-instances-container">
-    <PageTitle icon="mdi:database-cog">インスタンス (管理者)</PageTitle>
-
-    <div class="admin-instances-header">
-      <MainSwitch v-model="showDeleted">削除済みのインスタンスを表示</MainSwitch>
-    </div>
+    <PageTitle icon="mdi:database-cog">チーム環境 (管理者)</PageTitle>
 
     <div class="team-instances">
-      <div v-for="team in instancesByTeams" :key="team.team.id" class="team-instance">
-        <h2 class="team-instance-title" :id="team.team.id">
-          <div class="team-name">{{ team.team.name }}</div>
+      <div v-for="team in teams" :key="team.id" class="team-instance">
+        <h2 class="team-instance-title" :id="team.id">
+          <div class="team-name">{{ team.name }}</div>
           <div class="team-members">
             <UserChip
-              v-for="member in team.team.members"
+              v-for="member in team.members"
               :key="member"
               :name="getUserById(member)?.name ?? ''"
             />
           </div>
           <button
             class="team-accordion-button"
-            :class="{ closed: collapseStates[team.team.id] }"
-            @click="collapseStates[team.team.id] = !collapseStates[team.team.id]"
+            :class="{ closed: collapseStates[team.id] }"
+            @click="collapseStates[team.id] = !collapseStates[team.id]"
           >
             <Icon icon="mdi:chevron-down" />
           </button>
         </h2>
-        <div class="instance-card-list-wrapper" :class="{ closed: collapseStates[team.team.id] }">
-          <InstanceCardList :teamId="team.team.id" :instances="team.instances" />
+        <div class="instance-card-list-wrapper" :class="{ closed: collapseStates[team.id] }">
+          <TeamEnvironmentManagement :teamId="team.id" />
         </div>
       </div>
     </div>
@@ -69,11 +51,6 @@ const collapseStates = ref<Record<string, boolean>>({})
   flex-direction: column;
   gap: 2rem;
   container-type: inline-size;
-}
-
-.admin-instances-header {
-  display: flex;
-  justify-content: flex-end;
 }
 
 .team-instances {

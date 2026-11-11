@@ -3,24 +3,18 @@ import type { components } from '@/api/openapi'
 import CopyToClipboardButton from '@/components/CopyToClipboardButton.vue'
 import InstanceStatusChip from '@/components/InstanceStatusChip.vue'
 import MainButton from '@/components/MainButton.vue'
-import {
-  useCreateTeamInstance,
-  useDeleteTeamInstance,
-  useEnqueueBenchmark,
-  useStartTeamInstance,
-  useStopTeamInstance,
-} from '@/lib/useServerData'
+import { useEnqueueBenchmark } from '@/lib/useServerData'
 import { Icon } from '@iconify/vue'
 import notfoundImage from '@/assets/not-found.png'
-import { ref } from 'vue'
 
 type Instance = components['schemas']['Instance']
-const { teamId, instances } = defineProps<{ teamId: string; instances: Instance[] }>()
+const { teamId, instances, benchTargetInstanceId } = defineProps<{
+  teamId: string
+  instances: Instance[]
+  // 問題が対象サーバーを固定しているときの、対象サーバーの ID
+  benchTargetInstanceId?: string
+}>()
 
-const { mutate: createInstance, isPending: createInstanceInProgress } = useCreateTeamInstance()
-const { mutateAsync: startInstanceRequest } = useStartTeamInstance()
-const { mutateAsync: stopInstanceRequest } = useStopTeamInstance()
-const { mutateAsync: deleteInstanceRequest } = useDeleteTeamInstance()
 const { mutate: enqueueBenchmark } = useEnqueueBenchmark({
   redirect: true,
 })
@@ -28,6 +22,10 @@ const { mutate: enqueueBenchmark } = useEnqueueBenchmark({
 const enqueueBenchmarkHandler = (instanceId: string) => {
   enqueueBenchmark({ teamId, instanceId })
 }
+
+const canBenchmark = (instance: Instance) =>
+  instance.status === 'running' &&
+  (benchTargetInstanceId === undefined || instance.id === benchTargetInstanceId)
 
 const getMissingIPAddressMessage = (status: Instance['status'], kind: 'public' | 'private') => {
   if (status === 'deleting' || status === 'deleted') return '削除済みです'
@@ -37,60 +35,20 @@ const getMissingIPAddressMessage = (status: Instance['status'], kind: 'public' |
   if (status === 'building' || status === 'starting') return '割り当て待ちです'
   return '取得できません'
 }
-
-const startingInstances = ref<string[]>([])
-const stoppingInstances = ref<string[]>([])
-const deletingInstances = ref<string[]>([])
-
-const startInstance = async (args: { teamId: string; instanceId: string }) => {
-  startingInstances.value.push(args.instanceId)
-  try {
-    await startInstanceRequest(args)
-  } catch (e) {
-    // FIXME: handle error
-    console.error(e)
-  } finally {
-    startingInstances.value = startingInstances.value.filter((id) => id !== args.instanceId)
-  }
-}
-
-const stopInstance = async (args: { teamId: string; instanceId: string }) => {
-  stoppingInstances.value.push(args.instanceId)
-  try {
-    await stopInstanceRequest(args)
-  } catch (e) {
-    // FIXME: handle error
-    console.error(e)
-  } finally {
-    stoppingInstances.value = stoppingInstances.value.filter((id) => id !== args.instanceId)
-  }
-}
-
-const deleteInstance = async (args: { teamId: string; instanceId: string }) => {
-  deletingInstances.value.push(args.instanceId)
-  try {
-    await deleteInstanceRequest(args)
-  } catch (e) {
-    // FIXME: handle error
-    console.error(e)
-  } finally {
-    deletingInstances.value = deletingInstances.value.filter((id) => id !== args.instanceId)
-  }
-}
 </script>
 
 <template>
   <div class="instance-card-list-container">
     <div v-if="instances?.length === 0" class="no-instances">
       <img :src="notfoundImage" alt="" width="192" height="192" />
-      <div>現在インスタンスはありません</div>
+      <div>サーバーはまだありません</div>
     </div>
     <div class="instance-card-list">
       <div v-for="instance in instances" :key="instance.id" class="instance-card">
         <div class="instance-info">
           <div class="card-title">
             <Icon icon="mdi:server-network" width="24" height="24" />
-            <div>サーバー{{ instance.serverId }}</div>
+            <div>{{ instance.name }}</div>
             <InstanceStatusChip :status="instance.status" />
           </div>
           <div class="info-elements">
@@ -129,53 +87,15 @@ const deleteInstance = async (args: { teamId: string; instanceId: string }) => {
             <MainButton
               @click="enqueueBenchmarkHandler(instance.id)"
               class="action-button"
-              :disabled="instance.status !== 'running'"
+              :disabled="!canBenchmark(instance)"
             >
               <Icon icon="mdi:thunder" width="20" height="20" />
               <span>ベンチマーク実行</span>
             </MainButton>
           </div>
         </div>
-        <div class="management-buttons">
-          <MainButton
-            class="management-button"
-            :disabled="instance.status !== 'stopped'"
-            @click="startInstance({ teamId, instanceId: instance.id })"
-            :loading="startingInstances.includes(instance.id)"
-          >
-            <Icon icon="mdi:play-circle" width="20" height="20" />
-            <span>起動</span>
-          </MainButton>
-          <MainButton
-            class="management-button"
-            :disabled="instance.status !== 'running'"
-            @click="stopInstance({ teamId, instanceId: instance.id })"
-            :loading="stoppingInstances.includes(instance.id)"
-          >
-            <Icon icon="mdi:stop-pause" width="20" height="20" />
-            <span>停止</span>
-          </MainButton>
-          <MainButton
-            class="management-button"
-            variant="destructive"
-            :disabled="instance.status !== 'stopped'"
-            @click="deleteInstance({ teamId, instanceId: instance.id })"
-            :loading="deletingInstances.includes(instance.id)"
-          >
-            <Icon icon="mdi:trash-can" width="20" height="20" />
-            <span>削除</span>
-          </MainButton>
-        </div>
       </div>
     </div>
-    <MainButton
-      @click="createInstance({ teamId })"
-      class="create-instance-button"
-      :loading="createInstanceInProgress"
-    >
-      <Icon icon="mdi:tools" width="20" height="20" />
-      <span>新しいサーバーを作成</span>
-    </MainButton>
   </div>
 </template>
 
@@ -250,41 +170,9 @@ const deleteInstance = async (args: { teamId: string; instanceId: string }) => {
   flex: 1;
 }
 
-.management-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 160px;
-}
-
-.management-button {
-  flex: 1;
-}
-
-.create-instance-button {
-  width: 100%;
-}
-
 @container (max-width: 600px) {
   .info-elements {
     grid-template-columns: 1fr;
-  }
-}
-
-@container (max-width: 480px) {
-  .instance-card {
-    flex-direction: column;
-  }
-
-  .management-buttons {
-    flex-direction: row;
-    width: 100%;
-  }
-}
-
-@container (max-width: 320px) {
-  .management-buttons {
-    flex-direction: column;
   }
 }
 </style>

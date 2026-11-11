@@ -13,14 +13,14 @@ const closed = ref(isMobile)
 const links = [
   { icon: 'mdi:home', name: 'ホーム', path: '/' },
   { icon: 'mdi:thunder', name: 'ベンチマーク', path: '/benches' },
-  { icon: 'mdi:server-network', name: 'インスタンス', path: '/instances' },
+  { icon: 'mdi:server-network', name: 'チーム環境', path: '/instances' },
   { icon: 'mdi:account-group', name: 'チーム管理', path: '/team' },
   { icon: 'mdi:drive-document', name: 'ドキュメント', path: '/docs' },
 ]
 
 const adminLinks = [
   { icon: 'mdi:thunder-circle', name: 'ベンチマーク', path: '/admin/benches' },
-  { icon: 'mdi:database-cog', name: 'インスタンス', path: '/admin/instances' },
+  { icon: 'mdi:database-cog', name: 'チーム環境', path: '/admin/instances' },
   { icon: 'mdi:account-cog', name: 'チーム管理', path: '/admin/teams' },
   { icon: 'mdi:text-box-edit', name: 'ドキュメント', path: '/admin/docs' },
   { icon: 'mdi:account-lock', name: '権限管理', path: '/admin/permissions' },

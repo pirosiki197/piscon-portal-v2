@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import PageTitle from '@/components/PageTitle.vue'
-import TeamInstanceManagement from '@/components/TeamInstanceManagement.vue'
+import TeamEnvironmentManagement from '@/components/TeamEnvironmentManagement.vue'
 import { useMe } from '@/lib/useServerData'
 
 const { data: me } = useMe()
@@ -8,9 +8,9 @@ const { data: me } = useMe()
 
 <template>
   <main class="instances-container">
-    <PageTitle icon="mdi:server-network">インスタンス</PageTitle>
+    <PageTitle icon="mdi:server-network">チーム環境</PageTitle>
     <div v-if="me?.teamId !== undefined">
-      <TeamInstanceManagement :teamId="me.teamId" />
+      <TeamEnvironmentManagement :teamId="me.teamId" />
     </div>
     <div v-if="me !== undefined && me?.teamId === undefined">
       <p>チームに所属していません</p>

@@ -27,8 +27,8 @@ const { getTeamName } = useTeams()
 
 const columns = computed(() => (isAdmin ? 7 : 6))
 
-const getInstanceServerId = (instanceId: string) =>
-  instances.find((i) => i.id === instanceId)?.serverId ?? '?'
+const getInstanceName = (instanceId: string) =>
+  instances.find((i) => i.id === instanceId)?.name ?? '?'
 const getUserName = (userId: string) => getUserById(userId)?.name ?? ''
 </script>
 
@@ -77,7 +77,7 @@ const getUserName = (userId: string) => getUserById(userId)?.name ?? ''
           {{ getTeamName(bench.teamId) }}
         </div>
         <div class="bench-server list-server">
-          サーバー{{ getInstanceServerId(bench.instanceId) }}
+          {{ getInstanceName(bench.instanceId) }}
         </div>
         <div class="bench-user list-user">
           <UserChip :name="getUserName(bench.userId)" />

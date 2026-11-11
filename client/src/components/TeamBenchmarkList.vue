@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import BenchmarkList from '@/components/BenchmarkList.vue'
 import { useInterval } from '@/lib/useInterval'
-import { useTeamBenches, useTeamInstances } from '@/lib/useServerData'
+import { useTeamBenches, useTeamEnvironment, useTeamInstances } from '@/lib/useServerData'
 
 const { teamId } = defineProps<{ teamId: string }>()
 
 const { data: benches, error: benchesError, refetch } = useTeamBenches(teamId)
 const { data: instances } = useTeamInstances(teamId)
+const { data: environment } = useTeamEnvironment(teamId)
 
 useInterval(() => {
   const loadingStatuses = ['waiting', 'running', 'readying']
@@ -19,7 +20,11 @@ useInterval(() => {
 <template>
   <div class="team-benchmark-list-container">
     <div class="team-benchmark-list-actions">
-      <BenchmarkRunner :teamId="teamId" :benches="benches ?? []" :instances="instances ?? []" />
+      <BenchmarkRunner
+        :teamId="teamId"
+        :benches="benches ?? []"
+        :environment="environment ?? null"
+      />
       <SingleTeamScoreChart :benches="benches ?? []" />
       <div />
     </div>
