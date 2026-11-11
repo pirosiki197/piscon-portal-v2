@@ -84,6 +84,27 @@ func templateParams(res *cloudformation.ValidateTemplateOutput) (map[string]bool
 	return params, nil
 }
 
+// maxParameterValueBytes は、CloudFormation のパラメータ値 1 つの長さの上限である。
+// https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html
+const maxParameterValueBytes = 4096
+
+// stackParameters は、values のうちテンプレートが宣言しているものを、スタックのパラメータにする。
+// テンプレートが宣言していないパラメータを渡すと、スタックの作成が失敗する。
+// 値が上限より長ければ、[instance.ErrInvalidEnvironmentParams] を包んだエラーを返す。
+func stackParameters(declared map[string]bool, values map[string]string) ([]cfntypes.Parameter, error) {
+	var parameters []cfntypes.Parameter
+	for key, value := range values {
+		if !declared[key] {
+			continue
+		}
+		if len(value) > maxParameterValueBytes {
+			return nil, fmt.Errorf("%w: %s is %d bytes, longer than %d bytes", instance.ErrInvalidEnvironmentParams, key, len(value), maxParameterValueBytes)
+		}
+		parameters = append(parameters, cfntypes.Parameter{ParameterKey: aws.String(key), ParameterValue: aws.String(value)})
+	}
+	return parameters, nil
+}
+
 func (c *EnvironmentClient) Create(ctx context.Context, name string, params instance.EnvironmentParams) (string, error) {
 	values := map[string]string{
 		paramImageID:         c.cfg.ImageID,
@@ -92,15 +113,12 @@ func (c *EnvironmentClient) Create(ctx context.Context, name string, params inst
 		paramSubnetID:        c.cfg.SubnetID,
 		paramSecurityGroupID: c.cfg.SecurityGroupID,
 	}
-	var parameters []cfntypes.Parameter
-	for key, value := range values {
-		// テンプレートが宣言していないパラメータを渡すと、スタックの作成が失敗する。
-		if c.params[key] {
-			parameters = append(parameters, cfntypes.Parameter{ParameterKey: aws.String(key), ParameterValue: aws.String(value)})
-		}
+	parameters, err := stackParameters(c.params, values)
+	if err != nil {
+		return "", err
 	}
 
-	_, err := c.client.CreateStack(ctx, &cloudformation.CreateStackInput{
+	_, err = c.client.CreateStack(ctx, &cloudformation.CreateStackInput{
 		StackName:    aws.String(name),
 		TemplateBody: aws.String(c.cfg.TemplateBody),
 		Parameters:   parameters,

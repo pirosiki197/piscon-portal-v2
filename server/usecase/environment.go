@@ -99,6 +99,9 @@ func (u *environmentUseCaseImpl) CreateEnvironment(ctx context.Context, teamID u
 		TeamID:        teamID.String(),
 		SSHPublicKeys: sshKeys,
 	})
+	if errors.Is(err, instance.ErrInvalidEnvironmentParams) {
+		return TeamEnvironment{}, NewUseCaseError(err)
+	}
 	if err != nil {
 		return TeamEnvironment{}, fmt.Errorf("create infra environment: %w", err)
 	}

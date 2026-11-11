@@ -2,6 +2,7 @@ package instance
 
 import (
 	"context"
+	"errors"
 
 	"github.com/traPtitech/piscon-portal-v2/server/domain"
 )
@@ -24,10 +25,13 @@ type Manager interface {
 	Start(ctx context.Context, instance domain.InfraInstance) error
 }
 
+// ErrInvalidEnvironmentParams は、プロバイダーが受け付けない [EnvironmentParams] を表す。
+var ErrInvalidEnvironmentParams = errors.New("invalid environment params")
+
 // EnvironmentManager は、プロバイダーにチーム環境の作成と削除を依頼し、その状態を読む。
 type EnvironmentManager interface {
 	// Create は、name という名前でチーム環境の作成を依頼し、プロバイダーがチーム環境を識別する値を返す。
-	// 作成の完了は待たない。
+	// 作成の完了は待たない。params をプロバイダーが受け付けなければ、[ErrInvalidEnvironmentParams] を包んだエラーを返す。
 	Create(ctx context.Context, name string, params EnvironmentParams) (string, error)
 	// Get は、チーム環境の状態を返す。プロバイダーにチーム環境がなければ、状態は deleted になる。
 	Get(ctx context.Context, providerEnvironmentID string) (domain.InfraEnvironment, error)

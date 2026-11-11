@@ -2,6 +2,7 @@ package usecase_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -168,6 +169,19 @@ func TestCreateEnvironment(t *testing.T) {
 		m.envManager.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any()).Return("piscon-new", nil)
 		m.repo.EXPECT().CreateEnvironment(gomock.Any(), gomock.Any()).Return(repository.ErrAlreadyExists)
 		m.envManager.EXPECT().Delete(gomock.Any(), "piscon-new").Return(nil)
+
+		_, err := uc.CreateEnvironment(t.Context(), teamID)
+		assert.True(t, usecase.IsUseCaseError(err))
+	})
+
+	t.Run("プロバイダーが受け付けない入力なら、チームのエラーとして返す", func(t *testing.T) {
+		t.Parallel()
+		uc, m := newEnvironmentUseCase(t, "")
+		m.repo.EXPECT().FindTeamEnvironment(gomock.Any(), teamID).Return(domain.Environment{}, repository.ErrNotFound)
+		m.repo.EXPECT().FindTeam(gomock.Any(), teamID).Return(team, nil)
+		m.github.EXPECT().GetSSHKeys(gomock.Any(), gomock.Any()).Return(nil, nil)
+		m.envManager.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any()).
+			Return("", fmt.Errorf("%w: too long", instance.ErrInvalidEnvironmentParams))
 
 		_, err := uc.CreateEnvironment(t.Context(), teamID)
 		assert.True(t, usecase.IsUseCaseError(err))
