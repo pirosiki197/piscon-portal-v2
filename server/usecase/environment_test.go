@@ -174,6 +174,28 @@ func TestCreateEnvironment(t *testing.T) {
 		assert.True(t, usecase.IsUseCaseError(err))
 	})
 
+	t.Run("作成の依頼が失敗したら、作り始めているかもしれないチーム環境を消す", func(t *testing.T) {
+		t.Parallel()
+		uc, m := newEnvironmentUseCase(t, "")
+		m.repo.EXPECT().FindTeamEnvironment(gomock.Any(), teamID).Return(domain.Environment{}, repository.ErrNotFound)
+		m.repo.EXPECT().FindTeam(gomock.Any(), teamID).Return(team, nil)
+		m.github.EXPECT().GetSSHKeys(gomock.Any(), gomock.Any()).Return(nil, nil)
+		var name string
+		m.envManager.EXPECT().Create(gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, n string, _ instance.EnvironmentParams) (string, error) {
+				name = n
+				return "", assert.AnError
+			})
+		m.envManager.EXPECT().Delete(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(_ context.Context, id string) error {
+				assert.Equal(t, name, id)
+				return nil
+			})
+
+		_, err := uc.CreateEnvironment(t.Context(), teamID)
+		assert.ErrorIs(t, err, assert.AnError)
+	})
+
 	t.Run("プロバイダーが受け付けない入力なら、チームのエラーとして返す", func(t *testing.T) {
 		t.Parallel()
 		uc, m := newEnvironmentUseCase(t, "")

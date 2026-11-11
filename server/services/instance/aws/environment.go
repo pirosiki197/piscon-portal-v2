@@ -119,10 +119,12 @@ func (c *EnvironmentClient) Create(ctx context.Context, name string, params inst
 	}
 
 	_, err = c.client.CreateStack(ctx, &cloudformation.CreateStackInput{
-		StackName:    aws.String(name),
-		TemplateBody: aws.String(c.cfg.TemplateBody),
-		Parameters:   parameters,
-		OnFailure:    cfntypes.OnFailureRollback,
+		StackName: aws.String(name),
+		// SDK がリトライしても、AWS が同じ作成の依頼として扱うようにする。
+		ClientRequestToken: aws.String(name),
+		TemplateBody:       aws.String(c.cfg.TemplateBody),
+		Parameters:         parameters,
+		OnFailure:          cfntypes.OnFailureRollback,
 		// スタックのタグは、CloudFormation が配下のリソースにも付ける。
 		Tags: []cfntypes.Tag{
 			{Key: aws.String("piscon"), Value: aws.String("true")},

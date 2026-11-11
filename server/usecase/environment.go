@@ -103,6 +103,8 @@ func (u *environmentUseCaseImpl) CreateEnvironment(ctx context.Context, teamID u
 		return TeamEnvironment{}, NewUseCaseError(err)
 	}
 	if err != nil {
+		// 応答が失われただけで、プロバイダーはチーム環境を作り始めていることがある。
+		u.deleteUnrecordedEnvironment(ctx, environmentName(env.ID))
 		return TeamEnvironment{}, fmt.Errorf("create infra environment: %w", err)
 	}
 

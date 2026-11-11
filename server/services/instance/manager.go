@@ -29,10 +29,11 @@ var ErrInvalidEnvironmentParams = errors.New("invalid environment params")
 type EnvironmentManager interface {
 	// Create は、name という名前でチーム環境の作成を依頼し、プロバイダーがチーム環境を識別する値を返す。
 	// 作成の完了は待たない。params をプロバイダーが受け付けなければ、[ErrInvalidEnvironmentParams] を包んだエラーを返す。
+	// それ以外のエラーのときは、プロバイダーがチーム環境を作り始めていることがある。name を Delete に渡せば、それを消せる。
 	Create(ctx context.Context, name string, params EnvironmentParams) (string, error)
 	// Get は、チーム環境の状態を返す。プロバイダーにチーム環境がなければ、状態は deleted になる。
 	Get(ctx context.Context, providerEnvironmentID string) (domain.InfraEnvironment, error)
-	// Delete は、チーム環境の削除を依頼する。削除の完了は待たない。
+	// Delete は、チーム環境の削除を依頼する。削除の完了は待たない。チーム環境がなければ何もしない。
 	Delete(ctx context.Context, providerEnvironmentID string) error
 }
 
