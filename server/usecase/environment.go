@@ -252,17 +252,10 @@ func (s environmentSyncer) sync(ctx context.Context, env domain.Environment) (do
 }
 
 func (s environmentSyncer) withInfraInstances(ctx context.Context, env domain.Environment) (domain.Environment, error) {
-	if len(env.Instances) == 0 {
-		return env, nil
-	}
-	ids := make([]string, 0, len(env.Instances))
-	for _, inst := range env.Instances {
-		ids = append(ids, inst.Infra.ProviderInstanceID)
-	}
-	infraInstances, err := s.manager.GetByIDs(ctx, ids)
+	instances, err := withInfraInstances(ctx, s.manager, env.Instances)
 	if err != nil {
-		return domain.Environment{}, fmt.Errorf("get infra instances: %w", err)
+		return domain.Environment{}, err
 	}
-	env.Instances = setInfraInstances(env.Instances, infraInstances)
+	env.Instances = instances
 	return env, nil
 }

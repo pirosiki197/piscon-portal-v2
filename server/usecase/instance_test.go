@@ -54,16 +54,16 @@ func TestGetTeamInstances(t *testing.T) {
 		teamID              uuid.UUID
 		instances           []domain.Instance
 		GetTeamInstancesErr error
-		executeGetAll       bool
+		queriedIDs          []string
 		infraInstances      []domain.InfraInstance
-		GetAllErr           error
+		GetByIDsErr         error
 		result              []domain.Instance
 		expectErr           error
 	}{
 		"正しく取得できる": {
 			teamID:         teamID,
 			instances:      []domain.Instance{instance1, instance2, instance3},
-			executeGetAll:  true,
+			queriedIDs:     []string{"infra1", "infra2"},
 			infraInstances: []domain.InfraInstance{instance1.Infra, instance2.Infra},
 			result:         []domain.Instance{instance1, instance2, instance3},
 		},
@@ -72,12 +72,18 @@ func TestGetTeamInstances(t *testing.T) {
 			GetTeamInstancesErr: assert.AnError,
 			expectErr:           assert.AnError,
 		},
-		"GetAllでエラー": {
-			teamID:        teamID,
-			instances:     []domain.Instance{instance1, instance2},
-			executeGetAll: true,
-			GetAllErr:     assert.AnError,
-			expectErr:     assert.AnError,
+		// 終了したサーバーの ID を渡すと、EC2 はリクエスト全体を失敗させることがある。
+		"削除済みのサーバーだけならプロバイダーに問い合わせない": {
+			teamID:    teamID,
+			instances: []domain.Instance{instance3},
+			result:    []domain.Instance{instance3},
+		},
+		"GetByIDsでエラー": {
+			teamID:      teamID,
+			instances:   []domain.Instance{instance1, instance2},
+			queriedIDs:  []string{"infra1", "infra2"},
+			GetByIDsErr: assert.AnError,
+			expectErr:   assert.AnError,
 		},
 	}
 
@@ -92,13 +98,9 @@ func TestGetTeamInstances(t *testing.T) {
 			repo.EXPECT().GetTeamInstances(gomock.Any(), testCase.teamID, true).
 				Return(testCase.instances, testCase.GetTeamInstancesErr)
 
-			if testCase.executeGetAll {
-				ids := make([]string, 0, len(testCase.instances))
-				for _, inst := range testCase.instances {
-					ids = append(ids, inst.Infra.ProviderInstanceID)
-				}
-				manager.EXPECT().GetByIDs(gomock.Any(), ids).
-					Return(testCase.infraInstances, testCase.GetAllErr)
+			if testCase.queriedIDs != nil {
+				manager.EXPECT().GetByIDs(gomock.Any(), testCase.queriedIDs).
+					Return(testCase.infraInstances, testCase.GetByIDsErr)
 			}
 
 			result, err := u.GetTeamInstances(t.Context(), testCase.teamID)

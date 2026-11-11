@@ -35,21 +35,7 @@ func (i *InstanceUseCaseImpl) GetTeamInstances(ctx context.Context, teamID uuid.
 		return nil, fmt.Errorf("get team instances: %w", err)
 	}
 
-	return i.withInfra(ctx, instances)
-}
-
-func (i *InstanceUseCaseImpl) withInfra(ctx context.Context, instances []domain.Instance) ([]domain.Instance, error) {
-	infraInstanceIDs := make([]string, 0, len(instances))
-	for _, inst := range instances {
-		infraInstanceIDs = append(infraInstanceIDs, inst.Infra.ProviderInstanceID)
-	}
-
-	infraInstances, err := i.manager.GetByIDs(ctx, infraInstanceIDs)
-	if err != nil {
-		return nil, fmt.Errorf("get infra instances: %w", err)
-	}
-
-	return setInfraInstances(instances, infraInstances), nil
+	return withInfraInstances(ctx, i.manager, instances)
 }
 
 func (i *InstanceUseCaseImpl) GetAllInstances(ctx context.Context) ([]domain.Instance, error) {
@@ -57,7 +43,26 @@ func (i *InstanceUseCaseImpl) GetAllInstances(ctx context.Context) ([]domain.Ins
 	if err != nil {
 		return nil, fmt.Errorf("get all instances: %w", err)
 	}
-	return i.withInfra(ctx, instances)
+	return withInfraInstances(ctx, i.manager, instances)
+}
+
+// withInfraInstances は、instances のそれぞれにプロバイダーから読んだ状態を入れた、新しいスライスを返す。
+// 削除済みのサーバーはプロバイダーに問い合わせず、deleted とする。
+func withInfraInstances(ctx context.Context, manager instance.Manager, instances []domain.Instance) ([]domain.Instance, error) {
+	ids := make([]string, 0, len(instances))
+	for _, inst := range instances {
+		if inst.DeletedAt == nil {
+			ids = append(ids, inst.Infra.ProviderInstanceID)
+		}
+	}
+	if len(ids) == 0 {
+		return setInfraInstances(instances, nil), nil
+	}
+	infraInstances, err := manager.GetByIDs(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("get infra instances: %w", err)
+	}
+	return setInfraInstances(instances, infraInstances), nil
 }
 
 // setInfraInstances は、instances のそれぞれにプロバイダーから読んだ状態を入れた、新しいスライスを返す。

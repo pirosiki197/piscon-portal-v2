@@ -87,28 +87,31 @@ func (a *Client) GetByIDs(ctx context.Context, ids []string) ([]domain.InfraInst
 		return nil, nil
 	}
 
-	res, err := a.client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		InstanceIds: ids,
-		Filters:     []types.Filter{pisconTagFilter},
+	// InstanceIds で指定すると、EC2 が一覧から消した終了済みのインスタンスが 1 つでも含まれると全体が失敗する。
+	// フィルターで指定すれば、存在しない ID は結果に含まれないだけになる。
+	paginator := ec2.NewDescribeInstancesPaginator(a.client, &ec2.DescribeInstancesInput{
+		Filters: []types.Filter{
+			{Name: lo.ToPtr("instance-id"), Values: ids},
+			pisconTagFilter,
+		},
 	})
-	if err != nil {
-		return nil, fmt.Errorf("describe instances: %w", err)
-	}
-
-	instances := make([]domain.InfraInstance, 0, len(res.Reservations))
-	for _, reservation := range res.Reservations {
-		for _, instance := range reservation.Instances {
-			infraInstance := domain.InfraInstance{
-				ProviderInstanceID: *instance.InstanceId,
-				PrivateIP:          instance.PrivateIpAddress,
-				PublicIP:           instance.PublicIpAddress,
-				Status:             convertInstanceState(instance.State.Name),
+	var instances []domain.InfraInstance
+	for paginator.HasMorePages() {
+		res, err := paginator.NextPage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("describe instances: %w", err)
+		}
+		for _, reservation := range res.Reservations {
+			for _, instance := range reservation.Instances {
+				instances = append(instances, domain.InfraInstance{
+					ProviderInstanceID: *instance.InstanceId,
+					PrivateIP:          instance.PrivateIpAddress,
+					PublicIP:           instance.PublicIpAddress,
+					Status:             convertInstanceState(instance.State.Name),
+				})
 			}
-
-			instances = append(instances, infraInstance)
 		}
 	}
-
 	return instances, nil
 }
 
