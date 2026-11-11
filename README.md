@@ -41,13 +41,15 @@ AWS CLIを使って認証のプロファイルを設定します。`~/.aws/confi
 
 `.env` ファイルに以下のように追記します。
 
+チーム環境は、問題バンドルの環境テンプレートから CloudFormation のスタックとして作ります。そのため、AWS を使うときは問題バンドルが必要です。サーバーの AMI とインスタンスタイプは、問題バンドルのマニフェストとテンプレートが決めます。
+
 ```dotenv
-AWS_IMAGE_ID=ami-002d61d6436f85f12 # private-isu の AMI の ID
-AWS_INSTANCE_TYPE=c7a.large
+PROBLEM_BUNDLE_PATH={{ 問題バンドルのディレクトリ（ホスト上のパス） }}
+PROBLEM_BUNDLE_DIR=/bundle
+
 AWS_REGION=ap-northeast-1
 AWS_SUBNET_ID={{ AWS の Subnet ID }}
 AWS_SECURITY_GROUP_ID={{ AWS の Security Group ID }}
-AWS_KEY_PAIR_NAME={{ AWS の Key Pair 名 }}
 
 INSTANCE_MANAGER=aws
 

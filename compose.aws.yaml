@@ -12,6 +12,7 @@ services:
       - ./.dev/instance:/app/.dev/instance
       - ~/.aws/config:/app/.aws/config:ro
       - ~/.aws/credentials:/app/.aws/credentials:ro
+      - ${PROBLEM_BUNDLE_PATH:?PROBLEM_BUNDLE_PATH を .env に書いてください}:/bundle:ro
 
   runner:
     extends:
