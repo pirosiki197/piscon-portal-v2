@@ -12,6 +12,7 @@ import (
 
 	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker"
 	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker/internal/isuxbench"
+	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker/internal/sourceip"
 	"github.com/traPtitech/piscon-portal-v2/runner/config"
 	"github.com/traPtitech/piscon-portal-v2/runner/domain"
 )
@@ -26,7 +27,6 @@ const (
 
 type problemConf struct {
 	execPath              string
-	benchmarkerIP         string
 	benchmarkerDir        string
 	targetURL             string
 	paymentBindPort       int
@@ -45,10 +45,6 @@ func New(conf config.Problem) (*Isucon14, error) {
 	path, ok := conf.Options["benchmarker-path"].(string)
 	if !ok || path == "" {
 		return nil, fmt.Errorf("invalid or missing 'benchmarker-path' option in problem configuration")
-	}
-	benchmarkerIP, ok := conf.Options["benchmarker-ip"].(string)
-	if !ok || benchmarkerIP == "" {
-		return nil, fmt.Errorf("invalid or missing 'benchmarker-ip' option in problem configuration")
 	}
 	benchmarkerDir, ok := conf.Options["benchmarker-dir"].(string)
 	if !ok || benchmarkerDir == "" {
@@ -82,7 +78,6 @@ func New(conf config.Problem) (*Isucon14, error) {
 	return &Isucon14{
 		conf: problemConf{
 			execPath:              path,
-			benchmarkerIP:         benchmarkerIP,
 			benchmarkerDir:        benchmarkerDir,
 			targetURL:             targetURL,
 			paymentBindPort:       paymentBindPort,
@@ -94,9 +89,13 @@ func New(conf config.Problem) (*Isucon14, error) {
 func (b *Isucon14) Start(ctx context.Context, job *domain.Job) (benchmarker.Outputs, time.Time, error) {
 	port := strconv.Itoa(b.conf.paymentBindPort)
 	// ターゲットのアプリは`--payment-url`に決済のリクエストを送るので、ターゲットから届くアドレスにする。
+	benchmarkerIP, err := sourceip.For(job.GetTargetIPAdress())
+	if err != nil {
+		return benchmarker.Outputs{}, time.Time{}, fmt.Errorf("find benchmarker IP: %w", err)
+	}
 	paymentURL := url.URL{
 		Scheme: "http",
-		Host:   net.JoinHostPort(b.conf.benchmarkerIP, port),
+		Host:   net.JoinHostPort(benchmarkerIP, port),
 	}
 	args := []string{"run",
 		// `--target`はHostヘッダーとSNIに使われ、実際の接続先は`--addr`になる。

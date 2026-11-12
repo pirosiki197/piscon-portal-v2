@@ -10,12 +10,12 @@ import (
 
 	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker"
 	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker/internal/isuxbench"
+	"github.com/traPtitech/piscon-portal-v2/runner/benchmarker/internal/sourceip"
 	"github.com/traPtitech/piscon-portal-v2/runner/config"
 	"github.com/traPtitech/piscon-portal-v2/runner/domain"
 )
 
 type problemConf struct {
-	benchmarkerIP  string
 	execPath       string
 	benchmarkerDir string
 }
@@ -33,10 +33,6 @@ func New(conf config.Problem) (*Isucon11Qualify, error) {
 	if !ok || path == "" {
 		return nil, fmt.Errorf("invalid or missing 'benchmarker-path' option in problem configuration")
 	}
-	benchmarkerIP, ok := conf.Options["benchmarker-ip"].(string)
-	if !ok || benchmarkerIP == "" {
-		return nil, fmt.Errorf("invalid or missing 'benchmarker-ip' option in problem configuration")
-	}
 	benchmarkerDir, ok := conf.Options["benchmarker-dir"].(string)
 	if !ok || benchmarkerDir == "" {
 		return nil, fmt.Errorf("invalid or missing 'benchmarker-dir' option in problem configuration")
@@ -45,16 +41,20 @@ func New(conf config.Problem) (*Isucon11Qualify, error) {
 	return &Isucon11Qualify{
 		conf: problemConf{
 			execPath:       path,
-			benchmarkerIP:  benchmarkerIP,
 			benchmarkerDir: benchmarkerDir,
 		},
 	}, nil
 }
 
 func (b *Isucon11Qualify) Start(ctx context.Context, job *domain.Job) (benchmarker.Outputs, time.Time, error) {
+	// ターゲットのアプリは`--jia-service-url`にリクエストを送るので、ターゲットから届くアドレスにする。
+	benchmarkerIP, err := sourceip.For(job.GetTargetIPAdress())
+	if err != nil {
+		return benchmarker.Outputs{}, time.Time{}, fmt.Errorf("find benchmarker IP: %w", err)
+	}
 	jiaServiceURL := url.URL{
 		Scheme: "http",
-		Host:   net.JoinHostPort(b.conf.benchmarkerIP, "4999"),
+		Host:   net.JoinHostPort(benchmarkerIP, "4999"),
 	}
 	cmd := exec.CommandContext(ctx, b.conf.execPath,
 		"--target", job.GetTargetIPAdress(),

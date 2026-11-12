@@ -18,7 +18,6 @@ func TestStartWaitCanRunSequentially(t *testing.T) {
 	b := &Isucon11Qualify{
 		conf: problemConf{
 			execPath:       truePath,
-			benchmarkerIP:  "127.0.0.1",
 			benchmarkerDir: "/tmp",
 		},
 	}
