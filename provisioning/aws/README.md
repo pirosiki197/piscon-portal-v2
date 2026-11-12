@@ -26,6 +26,7 @@ npm install
 
 ```dotenv:.env
 # Runner インスタンスの AMI ID (必須)
+# 過去問では、問題バンドルの environment.imageId と同じ AMI を指定する（ベンチマーカーがその AMI に入っている）
 RUNNER_AMI_ID="ami-xxxxxxxxxxxxxxxxx"
 
 # Portal インスタンスの AMI ID (必須)
