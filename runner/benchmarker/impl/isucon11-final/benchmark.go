@@ -3,6 +3,7 @@ package isucon11final
 import (
 	"context"
 	"fmt"
+	"net"
 	"os/exec"
 	"time"
 
@@ -44,12 +45,13 @@ func New(conf config.Problem) (*Isucon11Final, error) {
 }
 
 func (b *Isucon11Final) Start(ctx context.Context, job *domain.Job) (benchmarker.Outputs, time.Time, error) {
-	// 本選のベンチマーカーは`--target`に`host:port`を受け取り、`http://<target>/`を組み立てる。
-	// ポートを省略した場合は80番になる。
+	// 本選のベンチマーカーは`--target`に`host:port`を受け取り、`--tls`を付けると`https://<target>/`を組み立てる。
+	// 競技環境の nginx は 443 番で TLS だけを受ける。証明書の検証はベンチマーカー側で行われない。
 	// `--exit-status`は付けない。競技上の失敗とプロセスの異常終了を区別するため、
 	// 合否は最終レポートから判定する。
 	cmd := exec.CommandContext(ctx, b.conf.execPath,
-		"--target", job.GetTargetIPAdress())
+		"--target", net.JoinHostPort(job.GetTargetIPAdress(), "443"),
+		"--tls")
 	cmd.Dir = b.conf.benchmarkerDir
 
 	proc, out, startedAt, err := isuxbench.Start(cmd)

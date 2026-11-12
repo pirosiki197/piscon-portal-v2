@@ -57,8 +57,9 @@ func (b *Isucon11Qualify) Start(ctx context.Context, job *domain.Job) (benchmark
 		Host:   net.JoinHostPort(benchmarkerIP, "4999"),
 	}
 	cmd := exec.CommandContext(ctx, b.conf.execPath,
-		"--target", job.GetTargetIPAdress(),
-		// tlsを使わない場合は`--all-adresses`にtargetだけ指定すればok
+		// 競技環境の nginx は 443 番で TLS だけを受ける。証明書の検証はベンチマーカー側で行われない。
+		"--target", net.JoinHostPort(job.GetTargetIPAdress(), "443"),
+		"--tls",
 		"--all-addresses", job.GetTargetIPAdress(),
 		"--jia-service-url", jiaServiceURL.String())
 	cmd.Dir = b.conf.benchmarkerDir
