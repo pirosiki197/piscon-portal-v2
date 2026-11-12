@@ -658,6 +658,7 @@ func TestStartBenchmarkTargetGone(t *testing.T) {
 					func(_ context.Context, _ uuid.UUID, b domain.Benchmark) error {
 						assert.Equal(t, domain.BenchmarkStatusFinished, b.Status)
 						assert.Equal(t, domain.BenchmarkResultStatusError, *b.Result)
+						assert.NotNil(t, b.StartedAt)
 						assert.NotNil(t, b.FinishedAt)
 						assert.NotNil(t, b.ErrorMes)
 						return nil

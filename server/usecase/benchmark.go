@@ -279,6 +279,7 @@ func (u *benchmarkUseCaseImpl) finishGoneBenchmark(ctx context.Context, bench do
 	now := time.Now()
 	result := domain.BenchmarkResultStatusError
 	errorMes := benchmarkTargetGoneMessage
+	// 終わったベンチは開始時刻を持つものとして API が返すので、開始時刻も入れる。
 	err := u.repo.UpdateBenchmark(ctx, bench.ID, domain.Benchmark{
 		ID:         bench.ID,
 		Instance:   bench.Instance,
@@ -286,6 +287,7 @@ func (u *benchmarkUseCaseImpl) finishGoneBenchmark(ctx context.Context, bench do
 		UserID:     bench.UserID,
 		Status:     domain.BenchmarkStatusFinished,
 		CreatedAt:  bench.CreatedAt,
+		StartedAt:  &now,
 		FinishedAt: &now,
 		Result:     &result,
 		ErrorMes:   &errorMes,
