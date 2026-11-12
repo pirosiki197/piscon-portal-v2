@@ -356,6 +356,12 @@ func (u *benchmarkUseCaseImpl) FinalizeBenchmark(ctx context.Context, benchmarkI
 			return NewUseCaseErrorFromMsg("benchmark is not running or readying")
 		}
 
+		// 進捗を一度も送らずに終わったベンチには開始時刻がない。終わったベンチは開始時刻を持つものとして API が返すので、終了時刻で埋める。
+		startedAt := bench.StartedAt
+		if startedAt == nil {
+			startedAt = &finishedAt
+		}
+
 		err = u.repo.UpdateBenchmark(ctx, benchmarkID, domain.Benchmark{
 			ID:         benchmarkID,
 			Instance:   bench.Instance,
@@ -363,7 +369,7 @@ func (u *benchmarkUseCaseImpl) FinalizeBenchmark(ctx context.Context, benchmarkI
 			UserID:     bench.UserID,
 			Status:     domain.BenchmarkStatusFinished, // ステータスを更新
 			CreatedAt:  bench.CreatedAt,
-			StartedAt:  bench.StartedAt,
+			StartedAt:  startedAt,
 			FinishedAt: &finishedAt, // 終了時間を更新
 			Score:      bench.Score,
 			Result:     &result,

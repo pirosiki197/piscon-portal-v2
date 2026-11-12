@@ -317,6 +317,7 @@ func TestFinalizeBenchmark(t *testing.T) {
 		StartedAt: ptr.Of(time.Now()),
 		Score:     100,
 	}
+	finishedAt := time.Now()
 
 	testCases := map[string]struct {
 		benchmarkID           uuid.UUID
@@ -328,6 +329,8 @@ func TestFinalizeBenchmark(t *testing.T) {
 		isErr                 bool
 		err                   error
 		isUseCaseError        bool
+		// wantStartedAt は、記録される開始時刻である。nil なら FindBenchmark が返したベンチの開始時刻になる。
+		wantStartedAt *time.Time
 	}{
 		"FindBenchmarkでErrNotFoundなのでErrNotFound": {
 			benchmarkID:         uuid.New(),
@@ -370,6 +373,23 @@ func TestFinalizeBenchmark(t *testing.T) {
 			UpdateBenchmarkResult: &UpdateBenchmarkResult{},
 			isErr:                 false,
 		},
+		// 進捗を送らずに終わったベンチの開始時刻が空のままだと、ベンチを返す API が panic する。
+		"readyingのまま終われば終了時刻を開始時刻にする": {
+			benchmarkID: uuid.New(),
+			result:      domain.BenchmarkResultStatusError,
+			finishedAt:  finishedAt,
+			errorMes:    ptr.Of("runner error"),
+			FindBenchmarkResult: &FindBenchmarkResult{benchmark: domain.Benchmark{
+				ID:        uuid.New(),
+				Instance:  domain.Instance{ID: uuid.New()},
+				TeamID:    uuid.New(),
+				UserID:    uuid.New(),
+				Status:    domain.BenchmarkStatusReadying,
+				CreatedAt: time.Now(),
+			}},
+			UpdateBenchmarkResult: &UpdateBenchmarkResult{},
+			wantStartedAt:         &finishedAt,
+		},
 	}
 
 	for name, testCase := range testCases {
@@ -389,6 +409,10 @@ func TestFinalizeBenchmark(t *testing.T) {
 					Return(testCase.FindBenchmarkResult.benchmark, testCase.FindBenchmarkResult.err)
 			}
 			if testCase.UpdateBenchmarkResult != nil {
+				startedAt := testCase.FindBenchmarkResult.benchmark.StartedAt
+				if testCase.wantStartedAt != nil {
+					startedAt = testCase.wantStartedAt
+				}
 				repo.EXPECT().UpdateBenchmark(gomock.Any(), testCase.benchmarkID, domain.Benchmark{
 					ID:         testCase.benchmarkID,
 					Instance:   testCase.FindBenchmarkResult.benchmark.Instance,
@@ -396,7 +420,7 @@ func TestFinalizeBenchmark(t *testing.T) {
 					UserID:     testCase.FindBenchmarkResult.benchmark.UserID,
 					Status:     domain.BenchmarkStatusFinished,
 					CreatedAt:  testCase.FindBenchmarkResult.benchmark.CreatedAt,
-					StartedAt:  testCase.FindBenchmarkResult.benchmark.StartedAt,
+					StartedAt:  startedAt,
 					FinishedAt: &testCase.finishedAt,
 					Score:      testCase.FindBenchmarkResult.benchmark.Score,
 					Result:     &testCase.result,
