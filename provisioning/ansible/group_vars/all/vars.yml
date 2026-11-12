@@ -25,13 +25,9 @@ portal:
 runner:
   git_tag: "{{ local.git_tag }}"
   portal_address: "{{ local.runner.portal_address }}"
-  problem_volumes:
-    private_isu:
-      - /home/isucon/private_isu/benchmarker:/benchmarker
 
 problem:
   bundle_dir: "{{ local.problem.bundle_dir | default('') }}"
-  name: "{{ local.problem.name | default('') }}"
 
 aws:
   region: "{{ local.aws.region }}"

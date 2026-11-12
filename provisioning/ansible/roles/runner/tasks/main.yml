@@ -6,19 +6,23 @@
     mode: "0755"
   become: true
 
+- name: Check problem bundle is given
+  ansible.builtin.assert:
+    that: problem.bundle_dir != ''
+    fail_msg: The runner reads the bench from the problem bundle; set local.problem.bundle_dir.
+
 - name: Copy problem bundle
   ansible.builtin.copy:
     src: "{{ problem.bundle_dir | regex_replace('/*$', '/') }}"
     dest: /srv/runner/bundle/
     mode: preserve
   become: true
-  when: problem.bundle_dir != ''
   notify:
     - Restart runner service
 
 - name: Set runner config file
   ansible.builtin.template:
-    src: "{{ 'bundle.yaml.j2' if problem.bundle_dir != '' else 'problems/' ~ problem.name ~ '.yaml.j2' }}"
+    src: bundle.yaml.j2
     dest: /srv/runner/piscon_runner.yaml
     mode: "0644"
   become: true
@@ -103,7 +107,6 @@
 - name: Check problem bundle
   ansible.builtin.command: /usr/local/bin/runner check /srv/runner/bundle
   changed_when: false
-  when: problem.bundle_dir != ''
 
 - name: Create piscon-runner service
   ansible.builtin.copy:
