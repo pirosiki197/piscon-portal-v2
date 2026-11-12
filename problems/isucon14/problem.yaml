@@ -1,0 +1,14 @@
+name: isucon14
+environment:
+  template: template.yaml
+  # matsuu/aws-isucon の公開 AMI（isucon14-20260818100152）。ベンチマーカーも入っている。
+  imageId: ami-0fcf9e8e8675a9ee4
+bench:
+  kind: adapter
+  adapter: isucon14
+  options:
+    benchmarker-path: /home/isucon/bench
+    benchmarker-dir: /home/isucon
+    # AMI の isuride-payment_mock が 12345 番を使うので、ベンチマーカーの決済サーバーは 12346 番で立てる。
+    payment-bind-port: 12346
+manual: manual.md

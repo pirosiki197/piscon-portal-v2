@@ -1,0 +1,12 @@
+name: isucon11-qualify
+environment:
+  template: template.yaml
+  # matsuu/aws-isucon の公開 AMI（isucon11-qualify-20220427213141）。ベンチマーカーも入っている。
+  imageId: ami-0796be4f4814fc3d5
+bench:
+  kind: adapter
+  adapter: isucon11-qualify
+  options:
+    benchmarker-path: /home/isucon/bench/bench
+    benchmarker-dir: /home/isucon/bench
+manual: manual.md

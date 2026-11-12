@@ -1,0 +1,90 @@
+# ISUCON11 本選 のチーム環境。公式と同じく、問題サーバー 3 台で構成する。
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  ImageId:
+    Type: AWS::EC2::Image::Id
+  TeamId:
+    Type: String
+  SshPublicKeys:
+    Type: String
+    NoEcho: true
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+  SecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+  InstanceType:
+    Type: String
+    Default: c5.large
+Resources:
+  Server1:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          SubnetId: !Ref SubnetId
+          GroupSet: [!Ref SecurityGroupId]
+          AssociatePublicIpAddress: true
+      Tags:
+        - Key: Name
+          Value: !Sub "isucon11-final-${TeamId}-1"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -eu
+          # AMI の isucon ユーザーは sudo できるが、SSH の鍵を持たない。
+          install -d -m 700 -o isucon -g isucon /home/isucon/.ssh
+          cat > /home/isucon/.ssh/authorized_keys <<'KEYS'
+          ${SshPublicKeys}
+          KEYS
+          chown isucon:isucon /home/isucon/.ssh/authorized_keys
+          chmod 600 /home/isucon/.ssh/authorized_keys
+  Server2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          SubnetId: !Ref SubnetId
+          GroupSet: [!Ref SecurityGroupId]
+          AssociatePublicIpAddress: true
+      Tags:
+        - Key: Name
+          Value: !Sub "isucon11-final-${TeamId}-2"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -eu
+          # AMI の isucon ユーザーは sudo できるが、SSH の鍵を持たない。
+          install -d -m 700 -o isucon -g isucon /home/isucon/.ssh
+          cat > /home/isucon/.ssh/authorized_keys <<'KEYS'
+          ${SshPublicKeys}
+          KEYS
+          chown isucon:isucon /home/isucon/.ssh/authorized_keys
+          chmod 600 /home/isucon/.ssh/authorized_keys
+  Server3:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          SubnetId: !Ref SubnetId
+          GroupSet: [!Ref SecurityGroupId]
+          AssociatePublicIpAddress: true
+      Tags:
+        - Key: Name
+          Value: !Sub "isucon11-final-${TeamId}-3"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -eu
+          # AMI の isucon ユーザーは sudo できるが、SSH の鍵を持たない。
+          install -d -m 700 -o isucon -g isucon /home/isucon/.ssh
+          cat > /home/isucon/.ssh/authorized_keys <<'KEYS'
+          ${SshPublicKeys}
+          KEYS
+          chown isucon:isucon /home/isucon/.ssh/authorized_keys
+          chmod 600 /home/isucon/.ssh/authorized_keys

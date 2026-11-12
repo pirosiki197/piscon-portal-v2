@@ -1,0 +1,11 @@
+name: private-isu
+environment:
+  template: template.yaml
+  # catatsuy/private-isu の公開 AMI（catatsuy_private_isu_amd64_20260524）。ベンチマーカーも入っている。
+  imageId: ami-09201e964bee13733
+bench:
+  kind: adapter
+  adapter: private_isu
+  options:
+    dir: /home/isucon/private_isu/benchmarker
+manual: manual.md

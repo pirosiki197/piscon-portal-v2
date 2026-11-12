@@ -1,0 +1,15 @@
+name: isucon13
+environment:
+  template: template.yaml
+  # matsuu/aws-isucon の公開 AMI（isucon13-20231128102223）。ベンチマーカーも入っている。
+  imageId: ami-006d211cb716fe8a0
+bench:
+  kind: adapter
+  adapter: isucon13
+  options:
+    benchmarker-path: /home/isucon/bench
+    benchmarker-dir: /home/isucon
+    target-url: https://pipe.u.isucon.local
+    dns-port: 53
+    enable-ssl: true
+manual: manual.md

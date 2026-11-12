@@ -1,0 +1,12 @@
+name: isucon11-final
+environment:
+  template: template.yaml
+  # matsuu/aws-isucon の公開 AMI（isucon11-final-20220427225555）。ベンチマーカーも入っている。
+  imageId: ami-00acaccebe03b5bed
+bench:
+  kind: adapter
+  adapter: isucon11-final
+  options:
+    benchmarker-path: /home/isucon/benchmarker/bin/benchmarker
+    benchmarker-dir: /home/isucon/benchmarker
+manual: manual.md
