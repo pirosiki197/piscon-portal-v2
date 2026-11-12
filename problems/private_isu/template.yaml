@@ -33,6 +33,11 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -eu
+          # UserData の結果を WaitCondition に知らせる。スタックは、全サーバーの UserData が終わってから完了する。
+          signal() {
+            curl -sf -X PUT -H 'Content-Type:' --data-binary '{"Status":"'"$1"'","Reason":"UserData","UniqueId":"Server1","Data":""}' '${ReadyHandle}'
+          }
+          trap 'status=$?; [ "$status" -eq 0 ] || signal FAILURE' EXIT
           # AMI の isucon ユーザーは sudo できるが、SSH の鍵を持たない。
           install -d -m 700 -o isucon -g isucon /home/isucon/.ssh
           cat > /home/isucon/.ssh/authorized_keys <<'KEYS'
@@ -40,3 +45,13 @@ Resources:
           KEYS
           chown isucon:isucon /home/isucon/.ssh/authorized_keys
           chmod 600 /home/isucon/.ssh/authorized_keys
+          signal SUCCESS
+  ReadyHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+  Ready:
+    Type: AWS::CloudFormation::WaitCondition
+    DependsOn: [Server1]
+    Properties:
+      Handle: !Ref ReadyHandle
+      Count: 1
+      Timeout: "900"
