@@ -21,6 +21,7 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.4.1
 	github.com/labstack/echo-contrib v0.50.1
 	github.com/labstack/echo/v4 v4.16.0
+	github.com/lxc/incus/v6 v6.23.0
 	github.com/ogen-go/ogen v1.24.0
 	github.com/samber/lo v1.53.0
 	github.com/spf13/viper v1.21.0
@@ -100,7 +101,6 @@ require (
 	github.com/kr/fs v0.1.0 // indirect
 	github.com/labstack/gommon v0.5.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
-	github.com/lxc/incus/v6 v6.23.0 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
@@ -132,7 +132,6 @@ require (
 	github.com/shirou/gopsutil/v4 v4.26.6 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
-	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
@@ -180,3 +179,5 @@ tool (
 	github.com/stephenafamo/bob/gen/bobgen-mysql
 	go.uber.org/mock/mockgen
 )
+
+ignore ./provisioning/aws/node_modules
