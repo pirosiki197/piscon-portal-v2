@@ -30,12 +30,14 @@ bundle: /srv/runner/bundle
 EOF
 
 incus delete --force "$name" >/dev/null 2>&1 || true
-incus launch "$image" "$name"
+# incus launch は、標準入力が端末でなければ、そこからインスタンスの設定を読む。
+incus launch "$image" "$name" </dev/null
 incus exec "$name" -- mkdir -p /srv/runner/bundle
-incus file push "$work/runner" "$name/usr/local/bin/runner" --mode 0755
-incus file push "$work/piscon_runner.yaml" "$name/srv/runner/piscon_runner.yaml"
-incus file push --recursive "${bundle_dir%/}/." "$name/srv/runner/bundle/"
-incus file push provisioning/ansible/roles/runner/files/piscon-runner.service "$name/etc/systemd/system/piscon-runner.service"
+incus file push "$work/runner" "$name/usr/local/bin/runner" --uid 0 --gid 0 --mode 0755
+incus file push "$work/piscon_runner.yaml" "$name/srv/runner/piscon_runner.yaml" --uid 0 --gid 0
+incus file push provisioning/ansible/roles/runner/files/piscon-runner.service "$name/etc/systemd/system/piscon-runner.service" --uid 0 --gid 0
+# incus file push --recursive はディレクトリごと送るので、中身だけを tar で流し込む。
+tar -C "$bundle_dir" --owner=0 --group=0 -cf - . | incus exec "$name" -- tar -C /srv/runner/bundle -xf -
 
 incus exec "$name" -- /usr/local/bin/runner check /srv/runner/bundle
 incus exec "$name" -- systemctl daemon-reload
