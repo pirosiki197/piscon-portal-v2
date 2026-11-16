@@ -22,6 +22,7 @@ import (
 	"github.com/traPtitech/piscon-portal-v2/server/services/instance"
 	"github.com/traPtitech/piscon-portal-v2/server/services/instance/aws"
 	"github.com/traPtitech/piscon-portal-v2/server/services/instance/fake"
+	"github.com/traPtitech/piscon-portal-v2/server/services/instance/incus"
 	"github.com/traPtitech/piscon-portal-v2/server/services/oauth2"
 	"github.com/traPtitech/piscon-portal-v2/server/usecase"
 )
@@ -121,6 +122,9 @@ func provideManagers(problemBundle *bundle.Bundle) (instance.Manager, instance.E
 	if manager == "aws" {
 		return provideAWSManagers(problemBundle)
 	}
+	if manager == "incus" {
+		return provideIncusManagers(problemBundle)
+	}
 	if manager == "" || manager == "mock" {
 		return provideFakeManagers(problemBundle)
 	}
@@ -181,6 +185,37 @@ func provideAWSManagers(problemBundle *bundle.Bundle) (instance.Manager, instanc
 		return nil, nil, fmt.Errorf("create AWS environment manager: %w", err)
 	}
 	return manager, envManager, nil
+}
+
+func provideIncusManagers(problemBundle *bundle.Bundle) (instance.Manager, instance.EnvironmentManager, error) {
+	if problemBundle == nil {
+		return nil, nil, errors.New("PROBLEM_BUNDLE_DIR is required for INSTANCE_MANAGER=incus")
+	}
+	env := problemBundle.Environment
+	if env.Incus == nil {
+		return nil, nil, fmt.Errorf("bundle %q has no environment.incus", problemBundle.Name)
+	}
+	userData, err := os.ReadFile(env.Incus.UserDataPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("read user-data: %w", err)
+	}
+	socket := os.Getenv("INCUS_SOCKET")
+	if socket == "" {
+		return nil, nil, errors.New("INCUS_SOCKET is required for INSTANCE_MANAGER=incus")
+	}
+
+	client, err := incus.New(context.Background(), incus.Config{
+		SocketPath: socket,
+		Servers:    env.Servers,
+		Image:      env.Incus.Image,
+		UserData:   string(userData),
+		CPU:        env.Incus.CPU,
+		Memory:     env.Incus.Memory,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("create incus manager: %w", err)
+	}
+	return client, client, nil
 }
 
 func setupAdminUser(repo repository.Repository) error {

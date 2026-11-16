@@ -1,0 +1,19 @@
+services:
+  db:
+    extends:
+      file: compose.yaml
+      service: db
+
+  portal:
+    extends:
+      file: compose.yaml
+      service: portal
+    # runner は Incus のコンテナで動き、ブリッジのゲートウェイを通してこのポートに届く。
+    ports:
+      - 50051:50051
+    group_add:
+      - ${INCUS_GID:?INCUS_GID に incus-admin グループの GID を .env に書いてください}
+    volumes:
+      - ./.dev/instance:/app/.dev/instance
+      - /var/lib/incus/unix.socket:/var/lib/incus/unix.socket
+      - ${PROBLEM_BUNDLE_PATH:?PROBLEM_BUNDLE_PATH を .env に書いてください}:/bundle:ro
