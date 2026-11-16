@@ -3,6 +3,13 @@ environment:
   template: template.yaml
   # catatsuy/private-isu の公開 AMI（catatsuy_private_isu_amd64_20260524）。ベンチマーカーも入っている。
   imageId: ami-09201e964bee13733
+  # 手元の Incus で動かすときの設定。イメージは incus/build-image.sh で作る。上限は AWS の c7a.large に合わせる。
+  incus:
+    image: private-isu
+    userData: incus/user-data.sh
+    limits:
+      cpu: 2
+      memory: 4GiB
 bench:
   kind: adapter
   adapter: private_isu
