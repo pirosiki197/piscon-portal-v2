@@ -65,6 +65,53 @@ AWS_SDK_LOAD_CONFIG=true
 docker compose --file compose.aws.yaml up
 ```
 
+### Incus を使ったローカルでの動作
+
+AWS の代わりに、手元の [Incus](https://linuxcontainers.org/incus/) のシステムコンテナでチーム環境を作れます。
+1 チーム分のチーム環境を作り、SSH で入り、ポータルからベンチを流すところまでを手元で試せます。
+仕組みと user-data の書き方は [server/services/instance/incus/README.md](server/services/instance/incus/README.md) を参照してください。
+
+Linux（WSL を含む）で、Incus と Docker Engine を同じマシンに入れて使います。
+ポータルは Incus の Unix ソケットを使うので、Docker Desktop では動きません。
+
+#### 1. Incus と Docker Engine の準備
+
+- Incus を入れて `incus admin init --minimal` で初期化し、自分を `incus-admin` グループに入れます
+- Docker Engine は、ホストのファイアウォールの FORWARD を既定で DROP にするので、Incus のコンテナから外に出られなくなります。`/etc/docker/daemon.json` に `"ip-forward-no-drop": true` を書いて Docker を再起動してください。詳しくは Incus のドキュメントの [Prevent connectivity issues with Incus and Docker](https://linuxcontainers.org/incus/docs/main/howto/network_bridge_firewalld/#prevent-connectivity-issues-with-incus-and-docker) を参照してください
+
+#### 2. 問題のイメージを作る
+
+問題バンドルの `environment.incus` があるのは、今は private-isu だけです。
+
+```bash
+problems/private_isu/incus/build-image.sh
+```
+
+#### 3. `.env` への追記
+
+```dotenv
+PROBLEM_BUNDLE_PATH={{ 問題バンドルのディレクトリ（ホスト上のパス） }}
+PROBLEM_BUNDLE_DIR=/bundle
+
+INSTANCE_MANAGER=incus
+INCUS_SOCKET=/var/lib/incus/unix.socket
+INCUS_GID={{ getent group incus-admin で表示される GID }}
+```
+
+#### 4. 起動
+
+```bash
+docker compose --file compose.incus.yaml up
+```
+
+runner は、問題のイメージから作る Incus のコンテナで動かします。ポータルが起動してから流してください。
+
+```bash
+provisioning/incus/runner.sh problems/private_isu private-isu
+```
+
+チーム環境のサーバーには、画面に表示される IP アドレスへ、Incus を動かすマシンから SSH できます。
+
 ## protobuf について
 
 [proto/README.md](proto/README.md) を参照してください。
