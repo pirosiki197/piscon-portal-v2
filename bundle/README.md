@@ -20,6 +20,12 @@ name: sample-fib # 問題の名前
 environment:
   template: template.yaml
   imageId: ami-0123456789abcdef0 # (任意) 問題サーバーの AMI ID
+  incus: # (任意) Incus でチーム環境を作るときの設定
+    image: private-isu # 問題サーバーを作る Incus のイメージのエイリアス
+    userData: incus/user-data.sh # 全サーバーの cloud-init に渡す user-data
+    limits: # 各サーバーのコンテナに付ける上限
+      cpu: 2
+      memory: 4GiB
 bench:
   target: Webapp # (任意) ベンチの対象に固定するサーバーの名前
   kind: command # command か adapter
@@ -32,6 +38,7 @@ manual: manual.md
 - パスは、問題バンドルのディレクトリからの相対パスで書きます。問題バンドルの外を指すパスは使えません
 - 知らないキーがあるとエラーになります
 - `environment.template` のテンプレートに直接書いた `AWS::EC2::Instance` が、チーム環境のサーバーになります。サーバーの名前は論理 ID です。テンプレートにサーバーが 1 つもないとエラーになります
+- `environment.incus` は、ポータルを `INSTANCE_MANAGER=incus` で動かすときだけ使います。書かなくても AWS と fake では動きます。書くときは `image`、`userData`、`limits.cpu`、`limits.memory` をすべて書きます。user-data の書き方は [`server/services/instance/incus/README.md`](../server/services/instance/incus/README.md) を参照してください
 - `bench.target` を書くと、ベンチの対象はいつもその名前のサーバーになります。書かなければ、チームがチーム環境のサーバーから対象を選びます。テンプレートにない名前を書くとエラーになります
 - `bench` の書き方は、`kind` によって変わります
   - `kind: command` は、作問者のベンチマーカーを共通の形式で実行します。`dir`、`command`、`timeout` を書きます。詳しくは [`runner/benchmarker/impl/command/README.md`](../runner/benchmarker/impl/command/README.md) を参照してください

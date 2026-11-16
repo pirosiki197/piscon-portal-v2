@@ -36,6 +36,21 @@ type Environment struct {
 	Servers []string
 	// ImageID は、問題サーバーの AMI ID である。マニフェストで省略されていれば空になる。
 	ImageID string
+	// Incus は、Incus でチーム環境を作る設定である。マニフェストで省略されていれば nil になる。
+	Incus *IncusEnvironment
+}
+
+// IncusEnvironment は、Incus でチーム環境を作る設定である。全サーバーに同じ値を使う。
+type IncusEnvironment struct {
+	// Image は、問題サーバーを作る Incus のイメージのエイリアスである。
+	Image string
+	// UserDataPath は、cloud-init に渡す user-data の絶対パスである。
+	UserDataPath string
+	// CPU は、コンテナに使わせるコア数である。1 以上である。
+	CPU int
+	// Memory は、コンテナに使わせるメモリの量を Incus の limits.memory の形式（4GiB など）で書いたものである。
+	// 空ではないが、形式はこのパッケージでは確かめない。
+	Memory string
 }
 
 // Bench は、ベンチの起動方法である。Command と Adapter のどちらか一方だけが nil でない。
@@ -66,6 +81,14 @@ type manifest struct {
 	Environment struct {
 		Template string `yaml:"template"`
 		ImageID  string `yaml:"imageId"`
+		Incus    *struct {
+			Image    string `yaml:"image"`
+			UserData string `yaml:"userData"`
+			Limits   struct {
+				CPU    int    `yaml:"cpu"`
+				Memory string `yaml:"memory"`
+			} `yaml:"limits"`
+		} `yaml:"incus"`
 	} `yaml:"environment"`
 	Bench struct {
 		Target  string         `yaml:"target"`
@@ -142,7 +165,32 @@ func (m manifest) validateEnvironment(dir string) (Environment, error) {
 	if err != nil {
 		return Environment{}, fmt.Errorf("template: %w", err)
 	}
-	return Environment{TemplatePath: template, Servers: servers, ImageID: m.Environment.ImageID}, nil
+	incus, err := m.validateIncus(dir)
+	if err != nil {
+		return Environment{}, fmt.Errorf("incus: %w", err)
+	}
+	return Environment{TemplatePath: template, Servers: servers, ImageID: m.Environment.ImageID, Incus: incus}, nil
+}
+
+func (m manifest) validateIncus(dir string) (*IncusEnvironment, error) {
+	in := m.Environment.Incus
+	if in == nil {
+		return nil, nil
+	}
+	if in.Image == "" {
+		return nil, errors.New("image is required")
+	}
+	userData, err := resolveFile(dir, in.UserData, false)
+	if err != nil {
+		return nil, fmt.Errorf("userData: %w", err)
+	}
+	if in.Limits.CPU <= 0 {
+		return nil, errors.New("limits.cpu must be a positive number of cores")
+	}
+	if in.Limits.Memory == "" {
+		return nil, errors.New("limits.memory is required")
+	}
+	return &IncusEnvironment{Image: in.Image, UserDataPath: userData, CPU: in.Limits.CPU, Memory: in.Limits.Memory}, nil
 }
 
 // templateServers は、CloudFormation テンプレートの Resources から AWS::EC2::Instance の論理 ID を探す。

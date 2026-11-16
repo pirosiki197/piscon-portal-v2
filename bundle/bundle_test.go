@@ -36,6 +36,7 @@ func newBundleDir(t *testing.T, manifest string) string {
 	dir := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(dir, "bench"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "manual.md"), []byte("# manual"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "user-data.sh"), []byte("#!/bin/sh\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "template.yaml"), []byte(testTemplate), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "empty.yaml"), []byte("Resources:\n  Eip:\n    Type: AWS::EC2::EIP\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, ManifestFile), []byte(manifest), 0o644))
@@ -100,6 +101,54 @@ manual: manual.md
 		Adapter: "isucon13",
 		Options: map[string]any{"benchmarker-path": "/home/isucon/bench", "dns-port": 53, "enable-ssl": true},
 	}, b.Bench.Adapter)
+}
+
+func TestLoadIncus(t *testing.T) {
+	dir := newBundleDir(t, `
+name: private-isu
+environment:
+  template: template.yaml
+  incus:
+    image: private-isu
+    userData: user-data.sh
+    limits:
+      cpu: 2
+      memory: 4GiB
+bench:
+  kind: adapter
+  adapter: private-isu
+manual: manual.md
+`)
+
+	b, err := Load(dir)
+	require.NoError(t, err)
+
+	assert.Equal(t, &IncusEnvironment{
+		Image:        "private-isu",
+		UserDataPath: filepath.Join(dir, "user-data.sh"),
+		CPU:          2,
+		Memory:       "4GiB",
+	}, b.Environment.Incus)
+}
+
+func TestLoadRejectsInvalidIncus(t *testing.T) {
+	const head = "name: x\nmanual: manual.md\nbench:\n  kind: adapter\n  adapter: a\nenvironment:\n  template: template.yaml\n  incus:\n"
+	tests := map[string]string{
+		"missing image":     "    userData: user-data.sh\n    limits: {cpu: 2, memory: 4GiB}\n",
+		"missing userData":  "    image: i\n    limits: {cpu: 2, memory: 4GiB}\n",
+		"userData outside":  "    image: i\n    userData: ../user-data.sh\n    limits: {cpu: 2, memory: 4GiB}\n",
+		"missing limits":    "    image: i\n    userData: user-data.sh\n",
+		"zero cpu":          "    image: i\n    userData: user-data.sh\n    limits: {cpu: 0, memory: 4GiB}\n",
+		"missing memory":    "    image: i\n    userData: user-data.sh\n    limits: {cpu: 2}\n",
+		"unknown limit key": "    image: i\n    userData: user-data.sh\n    limits: {cpu: 2, memory: 4GiB, disk: 10GiB}\n",
+	}
+
+	for name, incus := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, err := Load(newBundleDir(t, head+incus))
+			assert.Error(t, err)
+		})
+	}
 }
 
 func TestLoadRejectsInvalidManifest(t *testing.T) {
