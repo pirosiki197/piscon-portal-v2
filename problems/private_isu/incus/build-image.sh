@@ -16,7 +16,8 @@ trap cleanup EXIT
 cleanup
 
 # cloud 版のイメージには cloud-init が入っている。チーム環境では、cloud-init が問題バンドルの user-data を流す。
-incus launch images:ubuntu/24.04/cloud "$builder"
+# incus launch は、標準入力が端末でなければ、そこからインスタンスの設定を読む。
+incus launch images:ubuntu/24.04/cloud "$builder" </dev/null
 incus exec "$builder" -- cloud-init status --wait >/dev/null || true
 
 incus exec "$builder" --env REF="$ref" -- bash -euo pipefail -c '
@@ -30,12 +31,17 @@ cd /root/private-isu/provisioning
 printf "[guests]\nlocalhost ansible_connection=local\n[bench]\nlocalhost ansible_connection=local\n" > /root/inventory
 # allinone は、ベンチマーカーを問題サーバーと同じマシンに入れる。runner もこのイメージから作る。
 ANSIBLE_NOCOLOR=1 ansible-playbook -i /root/inventory image/ansible/playbooks.yml -e allinone=True
+cd /
 rm -rf /root/private-isu /root/inventory
 apt-get -qq purge -y ansible >/dev/null
 apt-get -qq autoremove -y >/dev/null
 # 消さないと、イメージから作ったコンテナで cloud-init が user-data を流さない。
 # machine-id も消し、コンテナごとに作り直させる。
 cloud-init clean --logs --machine-id
+# machine-id が空だと systemd は初回起動として preset を当て、preset にないユニットを有効にする。
+# そのままだと、公式のプロビジョニングが有効にしていない isu-go や php-fpm まで起動するので、何も有効にさせない。
+mkdir -p /etc/systemd/system-preset
+echo "disable *" > /etc/systemd/system-preset/00-piscon.preset
 '
 
 incus stop "$builder"
