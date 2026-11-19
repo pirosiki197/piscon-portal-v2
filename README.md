@@ -82,7 +82,14 @@ Linux（WSL を含む）で、Incus と Docker Engine を同じマシンに入�
 #### 1. Incus と Docker Engine の準備
 
 - Incus を入れて `incus admin init --minimal` で初期化し、自分を `incus-admin` グループに入れます
-- Docker Engine は、ホストのファイアウォールの FORWARD を既定で DROP にするので、Incus のコンテナから外に出られなくなります。`/etc/docker/daemon.json` に `"ip-forward-no-drop": true` を書いて Docker を再起動してください。詳しくは Incus のドキュメントの [Prevent connectivity issues with Incus and Docker](https://linuxcontainers.org/incus/docs/main/howto/network_bridge_firewalld/#prevent-connectivity-issues-with-incus-and-docker) を参照してください
+- コンテナを置くストレージには btrfs を勧めます。`btrfs-progs` を入れて Incus を再起動してから、次のように btrfs のプールを作り、既定のプロファイルをそこに向けます。`dir` のままでも動きますが、コンテナを作るたびにイメージを丸ごと展開するので、private-isu ではチーム環境の作成に 1 分ほどかかり、サーバー 1 台ごとに 6GB を使います
+
+  ```bash
+  incus storage create piscon btrfs size=100GiB
+  incus profile device set default root pool=piscon
+  ```
+
+- Docker Engine は、ホストのファイアウォールの FORWARD を既定で DROP にするので、Incus のコンテナから外に出られなくなります。`/etc/docker/daemon.json` に `"ip-forward-no-drop": true` を書いて Docker を再起動してください。この設定は Docker が DROP にするのを止めるだけなので、すでに Docker を起動したことがあるなら、`sudo iptables -P FORWARD ACCEPT` で一度だけ戻してください。詳しくは Incus のドキュメントの [Prevent connectivity issues with Incus and Docker](https://linuxcontainers.org/incus/docs/main/howto/network_bridge_firewalld/#prevent-connectivity-issues-with-incus-and-docker) を参照してください
 
 #### 2. 問題のイメージを作る
 
