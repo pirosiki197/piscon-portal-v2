@@ -119,8 +119,8 @@ func containerName(environment, server string) string {
 	return environment + "-" + server
 }
 
-// Create は、テンプレートの全サーバーのコンテナを並列に作って起動し、終わるまで待つ。
-// 準備（user-data）の完了は待たない。失敗しても、作れたコンテナは消さない。
+// Create は、テンプレートの全サーバーのコンテナの作成と起動を依頼し、全コンテナが Incus に登録されるまで待つ。
+// イメージの展開、起動、準備（user-data）の完了は待たない。失敗しても、作れたコンテナは消さない。
 func (c *Client) Create(ctx context.Context, name string, params instance.EnvironmentParams) (string, error) {
 	g, ctx := errgroup.WithContext(ctx)
 	for _, server := range c.cfg.Servers {
@@ -143,7 +143,7 @@ func (c *Client) Create(ctx context.Context, name string, params instance.Enviro
 			if err != nil {
 				return fmt.Errorf("create container for %s: %w", server, err)
 			}
-			if err := op.WaitContext(ctx); err != nil {
+			if err := c.waitRegistered(ctx, containerName(name, server), op.Get().ID); err != nil {
 				return fmt.Errorf("create container for %s: %w", server, err)
 			}
 			return nil
@@ -153,6 +153,36 @@ func (c *Client) Create(ctx context.Context, name string, params instance.Enviro
 		return "", fmt.Errorf("create environment %s: %w", name, err)
 	}
 	return name, nil
+}
+
+// registerTimeout は、作成を依頼してから、コンテナが Incus に登録されるまでを待つ時間である。
+const registerTimeout = 30 * time.Second
+
+// waitRegistered は、コンテナが Incus に登録されるまで待つ。作成の操作が先に失敗すれば、そのエラーを返す。
+// 登録はすぐに済むが、イメージの展開はストレージによっては数十秒かかるので、作成の操作の完了は待たない。
+// 登録の前に戻ると、直後の Get がコンテナを見つけられず、チーム環境を deleted とみなす。
+func (c *Client) waitRegistered(ctx context.Context, container, operationID string) error {
+	ctx, cancel := context.WithTimeout(ctx, registerTimeout)
+	defer cancel()
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		_, _, err := c.client.GetInstance(container)
+		if err == nil {
+			return nil
+		}
+		if !api.StatusErrorCheck(err, http.StatusNotFound) {
+			return fmt.Errorf("get container %s: %w", container, err)
+		}
+		if op, _, err := c.client.GetOperation(operationID); err == nil && op.StatusCode.IsFinal() && op.Err != "" {
+			return errors.New(op.Err)
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("wait for container %s to be registered: %w", container, ctx.Err())
+		case <-ticker.C:
+		}
+	}
 }
 
 func (c *Client) Get(_ context.Context, name string) (domain.InfraEnvironment, error) {
