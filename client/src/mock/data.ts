@@ -20,18 +20,21 @@ export const users: paths['/users']['get']['responses']['200']['content']['appli
     id: userIds.cp20,
     isAdmin: true,
     name: 'cp20',
+    iconUrl: 'https://q.trap.jp/api/v3/public/icon/cp20',
     teamId: teamIds['ikura-cp'],
   },
   {
     id: userIds['ikura-hamu'],
     isAdmin: false,
     name: 'ikura-hamu',
+    iconUrl: 'https://q.trap.jp/api/v3/public/icon/ikura-hamu',
     teamId: teamIds['ikura-cp'],
   },
   {
     id: userIds.pirosiki,
     isAdmin: false,
     name: 'pirosiki',
+    iconUrl: 'https://q.trap.jp/api/v3/public/icon/pirosiki',
     teamId: teamIds.piropiro,
   },
 ]

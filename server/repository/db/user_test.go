@@ -8,6 +8,7 @@ import (
 	"github.com/stephenafamo/bob/dialect/mysql/sm"
 	"github.com/stretchr/testify/assert"
 	"github.com/traPtitech/piscon-portal-v2/server/domain"
+	"github.com/traPtitech/piscon-portal-v2/server/repository"
 	"github.com/traPtitech/piscon-portal-v2/server/repository/db/models"
 	"github.com/traPtitech/piscon-portal-v2/server/utils/testutil"
 )
@@ -212,4 +213,66 @@ func TestDeleteAdmins(t *testing.T) {
 	for _, admin := range resultAdmins {
 		assert.False(t, admin.IsAdmin)
 	}
+}
+
+func TestFindUserByIdentity(t *testing.T) {
+	t.Parallel()
+
+	repo, db := setupRepository(t)
+
+	user := domain.User{
+		ID:       uuid.New(),
+		Name:     "alice",
+		Provider: "dev",
+		Subject:  "alice",
+		IconURL:  "https://example.com/alice.png",
+	}
+	// 同じ subject を別の認証手段で持つユーザー
+	other := domain.User{ID: uuid.New(), Name: "alice-traq", Provider: "traq", Subject: "alice"}
+	mustMakeUser(t, db, user)
+	mustMakeUser(t, db, other)
+
+	got, err := repo.FindUserByIdentity(t.Context(), "dev", "alice")
+	assert.NoError(t, err)
+	testutil.CompareUser(t, user, got)
+	assert.Equal(t, user.IconURL, got.IconURL)
+
+	_, err = repo.FindUserByIdentity(t.Context(), "dev", "bob")
+	assert.ErrorIs(t, err, repository.ErrNotFound)
+}
+
+func TestCountUsers(t *testing.T) {
+	t.Parallel()
+
+	repo, db := setupRepository(t)
+
+	count, err := repo.CountUsers(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), count)
+
+	mustMakeUser(t, db, domain.User{ID: uuid.New(), Name: "user1"})
+	mustMakeUser(t, db, domain.User{ID: uuid.New(), Name: "user2"})
+
+	count, err = repo.CountUsers(t.Context())
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), count)
+}
+
+func TestCreateUser(t *testing.T) {
+	t.Parallel()
+
+	repo, _ := setupRepository(t)
+
+	user := domain.NewUser(domain.Identity{Provider: "dev", Subject: "alice", DefaultName: "alice"})
+	assert.NoError(t, repo.CreateUser(t.Context(), user))
+
+	got, err := repo.FindUser(t.Context(), user.ID)
+	assert.NoError(t, err)
+	testutil.CompareUser(t, user, got)
+	assert.Equal(t, "dev", got.Provider)
+	assert.Equal(t, "alice", got.Subject)
+	assert.Empty(t, got.IconURL)
+
+	sameName := domain.NewUser(domain.Identity{Provider: "traq", Subject: uuid.NewString(), DefaultName: "alice"})
+	assert.ErrorIs(t, repo.CreateUser(t.Context(), sameName), repository.ErrAlreadyExists)
 }

@@ -8,10 +8,16 @@ CREATE TABLE IF NOT EXISTS `teams` (
 CREATE TABLE IF NOT EXISTS `users` (
     `id` VARCHAR(36) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
+    -- ユーザーを確かめた認証手段の ID と、その認証手段の中でユーザーを指す値
+    `provider` VARCHAR(32) NOT NULL,
+    `subject` VARCHAR(255) NOT NULL,
+    -- NULL なら既定のアイコンを使う
+    `icon_url` VARCHAR(2048),
     `team_id` VARCHAR(36),
     `is_admin` TINYINT(1) NOT NULL DEFAULT 0,
     PRIMARY KEY (`id`),
     UNIQUE KEY (`name`),
+    UNIQUE KEY (`provider`, `subject`),
     FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

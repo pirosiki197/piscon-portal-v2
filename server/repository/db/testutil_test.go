@@ -15,13 +15,17 @@ import (
 	"github.com/traPtitech/piscon-portal-v2/server/repository/db/models"
 )
 
+// mustMakeUser は、user を記録する。Provider と Subject が空なら、"test" と ID で埋める。
 func mustMakeUser(t *testing.T, executor bob.Executor, user domain.User) {
 	t.Helper()
 	_, err := models.Users.Insert(&models.UserSetter{
-		ID:      lo.ToPtr(user.ID.String()),
-		Name:    lo.ToPtr(user.Name),
-		TeamID:  lo.Ternary(user.TeamID.Valid, db.ToSQLNull(user.TeamID.UUID.String()), nil),
-		IsAdmin: lo.ToPtr(user.IsAdmin),
+		ID:       lo.ToPtr(user.ID.String()),
+		Name:     lo.ToPtr(user.Name),
+		Provider: lo.ToPtr(lo.CoalesceOrEmpty(user.Provider, "test")),
+		Subject:  lo.ToPtr(lo.CoalesceOrEmpty(user.Subject, user.ID.String())),
+		IconURL:  lo.Ternary(user.IconURL != "", db.ToSQLNull(user.IconURL), nil),
+		TeamID:   lo.Ternary(user.TeamID.Valid, db.ToSQLNull(user.TeamID.UUID.String()), nil),
+		IsAdmin:  lo.ToPtr(user.IsAdmin),
 	}).Exec(context.Background(), executor)
 	require.NoError(t, err)
 }

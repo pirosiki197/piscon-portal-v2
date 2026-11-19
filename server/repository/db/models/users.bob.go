@@ -24,10 +24,13 @@ import (
 
 // User is an object representing the database table.
 type User struct {
-	ID      string           `db:"id,pk" `
-	Name    string           `db:"name" `
-	TeamID  sql.Null[string] `db:"team_id" `
-	IsAdmin bool             `db:"is_admin" `
+	ID       string           `db:"id,pk" `
+	Name     string           `db:"name" `
+	Provider string           `db:"provider" `
+	Subject  string           `db:"subject" `
+	IconURL  sql.Null[string] `db:"icon_url" `
+	TeamID   sql.Null[string] `db:"team_id" `
+	IsAdmin  bool             `db:"is_admin" `
 
 	R userR `db:"-" `
 
@@ -39,7 +42,7 @@ type User struct {
 type UserSlice []*User
 
 // Users contains methods to work with the users table
-var Users = mysql.NewTablex[*User, UserSlice, *UserSetter]("users", buildUserColumns("users"), userScanMapper, []string{"id"}, []string{"name"})
+var Users = mysql.NewTablex[*User, UserSlice, *UserSetter]("users", buildUserColumns("users"), userScanMapper, []string{"id"}, []string{"name"}, []string{"provider", "subject"})
 
 // UsersQuery is a query on the users table
 type UsersQuery = *mysql.ViewQuery[*User, UserSlice]
@@ -62,7 +65,7 @@ type userRLoaded struct {
 
 func buildUserColumns(tableName string) userColumns {
 	columnsExpr := expr.NewColumnsExpr(
-		"id", "name", "team_id", "is_admin",
+		"id", "name", "provider", "subject", "icon_url", "team_id", "is_admin",
 	)
 
 	if tableName != "" {
@@ -74,6 +77,9 @@ func buildUserColumns(tableName string) userColumns {
 		tableAlias:  tableName,
 		ID:          buildUserColumn(tableName, "id"),
 		Name:        buildUserColumn(tableName, "name"),
+		Provider:    buildUserColumn(tableName, "provider"),
+		Subject:     buildUserColumn(tableName, "subject"),
+		IconURL:     buildUserColumn(tableName, "icon_url"),
 		TeamID:      buildUserColumn(tableName, "team_id"),
 		IsAdmin:     buildUserColumn(tableName, "is_admin"),
 	}
@@ -84,6 +90,9 @@ type userColumns struct {
 	tableAlias string
 	ID         userColumn
 	Name       userColumn
+	Provider   userColumn
+	Subject    userColumn
+	IconURL    userColumn
 	TeamID     userColumn
 	IsAdmin    userColumn
 }
@@ -131,19 +140,31 @@ func (c userColumn) ShouldOmitParens() bool {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type UserSetter struct {
-	ID      *string           `db:"id,pk" `
-	Name    *string           `db:"name" `
-	TeamID  *sql.Null[string] `db:"team_id" `
-	IsAdmin *bool             `db:"is_admin" `
+	ID       *string           `db:"id,pk" `
+	Name     *string           `db:"name" `
+	Provider *string           `db:"provider" `
+	Subject  *string           `db:"subject" `
+	IconURL  *sql.Null[string] `db:"icon_url" `
+	TeamID   *sql.Null[string] `db:"team_id" `
+	IsAdmin  *bool             `db:"is_admin" `
 }
 
 func (s UserSetter) SetColumns() []string {
-	vals := make([]string, 0, 4)
+	vals := make([]string, 0, 7)
 	if s.ID != nil {
 		vals = append(vals, "id")
 	}
 	if s.Name != nil {
 		vals = append(vals, "name")
+	}
+	if s.Provider != nil {
+		vals = append(vals, "provider")
+	}
+	if s.Subject != nil {
+		vals = append(vals, "subject")
+	}
+	if s.IconURL != nil {
+		vals = append(vals, "icon_url")
 	}
 	if s.TeamID != nil {
 		vals = append(vals, "team_id")
@@ -169,6 +190,31 @@ func (s UserSetter) Overwrite(t *User) {
 				return *new(string)
 			}
 			return *s.Name
+		}()
+	}
+	if s.Provider != nil {
+		t.Provider = func() string {
+			if s.Provider == nil {
+				return *new(string)
+			}
+			return *s.Provider
+		}()
+	}
+	if s.Subject != nil {
+		t.Subject = func() string {
+			if s.Subject == nil {
+				return *new(string)
+			}
+			return *s.Subject
+		}()
+	}
+	if s.IconURL != nil {
+		t.IconURL = func() sql.Null[string] {
+			if s.IconURL == nil {
+				return *new(sql.Null[string])
+			}
+			v := s.IconURL
+			return *v
 		}()
 	}
 	if s.TeamID != nil {
@@ -217,6 +263,37 @@ func (s *UserSetter) Apply(q *dialect.InsertQuery) {
 				return *s.Name
 			}()).WriteSQL(ctx, w, d, start)
 		}), bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
+			if s.Provider == nil {
+				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return mysql.Arg(func() string {
+				if s.Provider == nil {
+					return *new(string)
+				}
+				return *s.Provider
+			}()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
+			if s.Subject == nil {
+				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return mysql.Arg(func() string {
+				if s.Subject == nil {
+					return *new(string)
+				}
+				return *s.Subject
+			}()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
+			if s.IconURL == nil {
+				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return mysql.Arg(func() sql.Null[string] {
+				if s.IconURL == nil {
+					return *new(sql.Null[string])
+				}
+				v := s.IconURL
+				return *v
+			}()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
 			if s.TeamID == nil {
 				return mysql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
 			}
@@ -245,7 +322,7 @@ func (s UserSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s UserSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 4)
+	exprs := make([]bob.Expression, 0, 7)
 
 	if s.ID != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -258,6 +335,27 @@ func (s UserSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			mysql.Quote(append(prefix, "name")...),
 			mysql.Arg(s.Name),
+		}})
+	}
+
+	if s.Provider != nil {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			mysql.Quote(append(prefix, "provider")...),
+			mysql.Arg(s.Provider),
+		}})
+	}
+
+	if s.Subject != nil {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			mysql.Quote(append(prefix, "subject")...),
+			mysql.Arg(s.Subject),
+		}})
+	}
+
+	if s.IconURL != nil {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			mysql.Quote(append(prefix, "icon_url")...),
+			mysql.Arg(s.IconURL),
 		}})
 	}
 
@@ -285,13 +383,19 @@ func userScanMapper(ctx context.Context, cols []string) (scan.BeforeFunc, func(a
 		idx int
 		dst func(o *User) any
 	}
-	targets := make([]target, 0, 4)
+	targets := make([]target, 0, 7)
 	for i, col := range cols {
 		switch col {
 		case "id":
 			targets = append(targets, target{i, func(o *User) any { return &o.ID }})
 		case "name":
 			targets = append(targets, target{i, func(o *User) any { return &o.Name }})
+		case "provider":
+			targets = append(targets, target{i, func(o *User) any { return &o.Provider }})
+		case "subject":
+			targets = append(targets, target{i, func(o *User) any { return &o.Subject }})
+		case "icon_url":
+			targets = append(targets, target{i, func(o *User) any { return &o.IconURL }})
 		case "team_id":
 			targets = append(targets, target{i, func(o *User) any { return &o.TeamID }})
 		case "is_admin":
@@ -700,12 +804,15 @@ func (user0 *User) AttachTeam(ctx context.Context, exec bob.Executor, team1 *Tea
 }
 
 type userWhere[Q mysql.Filterable] struct {
-	cols    userColumns
-	ID      mysql.WhereMod[Q, string]
-	Name    mysql.WhereMod[Q, string]
-	TeamID  mysql.WhereNullMod[Q, string]
-	IsAdmin mysql.WhereMod[Q, bool]
-	R       userWhereR[Q]
+	cols     userColumns
+	ID       mysql.WhereMod[Q, string]
+	Name     mysql.WhereMod[Q, string]
+	Provider mysql.WhereMod[Q, string]
+	Subject  mysql.WhereMod[Q, string]
+	IconURL  mysql.WhereNullMod[Q, string]
+	TeamID   mysql.WhereNullMod[Q, string]
+	IsAdmin  mysql.WhereMod[Q, bool]
+	R        userWhereR[Q]
 }
 
 func (userWhere[Q]) AliasedAs(alias string) userWhere[Q] {
@@ -714,12 +821,15 @@ func (userWhere[Q]) AliasedAs(alias string) userWhere[Q] {
 
 func buildUserWhere[Q mysql.Filterable](cols userColumns) userWhere[Q] {
 	return userWhere[Q]{
-		cols:    cols,
-		ID:      mysql.Where[Q, string](cols.ID.Expression),
-		Name:    mysql.Where[Q, string](cols.Name.Expression),
-		TeamID:  mysql.WhereNull[Q, string](cols.TeamID.Expression),
-		IsAdmin: mysql.Where[Q, bool](cols.IsAdmin.Expression),
-		R:       userWhereR[Q]{cols: cols},
+		cols:     cols,
+		ID:       mysql.Where[Q, string](cols.ID.Expression),
+		Name:     mysql.Where[Q, string](cols.Name.Expression),
+		Provider: mysql.Where[Q, string](cols.Provider.Expression),
+		Subject:  mysql.Where[Q, string](cols.Subject.Expression),
+		IconURL:  mysql.WhereNull[Q, string](cols.IconURL.Expression),
+		TeamID:   mysql.WhereNull[Q, string](cols.TeamID.Expression),
+		IsAdmin:  mysql.Where[Q, bool](cols.IsAdmin.Expression),
+		R:        userWhereR[Q]{cols: cols},
 	}
 }
 
@@ -762,10 +872,13 @@ func (w userWhereR[Q]) HasTeam(filters ...bob.Mod[*dialect.SelectQuery]) mods.Wh
 // on a LEFT JOIN miss every column comes back NULL, so each field uses the
 // nullable version of the column type even when the column itself is NOT NULL.
 type userPreloadBuf struct {
-	ID      sql.Null[string]
-	Name    sql.Null[string]
-	TeamID  sql.Null[string]
-	IsAdmin sql.Null[bool]
+	ID       sql.Null[string]
+	Name     sql.Null[string]
+	Provider sql.Null[string]
+	Subject  sql.Null[string]
+	IconURL  sql.Null[string]
+	TeamID   sql.Null[string]
+	IsAdmin  sql.Null[bool]
 }
 
 // userScanMapperNullable maps the preloaded user
@@ -780,7 +893,7 @@ func userScanMapperNullable(prefix string) scan.Mapper[*User] {
 			idx int
 			dst func(b *userPreloadBuf) any
 		}
-		targets := make([]target, 0, 4)
+		targets := make([]target, 0, 7)
 		for i, col := range cols {
 			name, ok := strings.CutPrefix(col, prefix)
 			if !ok {
@@ -791,6 +904,12 @@ func userScanMapperNullable(prefix string) scan.Mapper[*User] {
 				targets = append(targets, target{i, func(b *userPreloadBuf) any { return &b.ID }})
 			case "name":
 				targets = append(targets, target{i, func(b *userPreloadBuf) any { return &b.Name }})
+			case "provider":
+				targets = append(targets, target{i, func(b *userPreloadBuf) any { return &b.Provider }})
+			case "subject":
+				targets = append(targets, target{i, func(b *userPreloadBuf) any { return &b.Subject }})
+			case "icon_url":
+				targets = append(targets, target{i, func(b *userPreloadBuf) any { return &b.IconURL }})
 			case "team_id":
 				targets = append(targets, target{i, func(b *userPreloadBuf) any { return &b.TeamID }})
 			case "is_admin":
@@ -819,6 +938,9 @@ func userScanMapperNullable(prefix string) scan.Mapper[*User] {
 				// so this check also matches when only a subset is selected.
 				if !(buf.ID.Valid) &&
 					!(buf.Name.Valid) &&
+					!(buf.Provider.Valid) &&
+					!(buf.Subject.Valid) &&
+					!(buf.IconURL.Valid) &&
 					!(buf.TeamID.Valid) &&
 					!(buf.IsAdmin.Valid) {
 					return nil, nil
@@ -831,6 +953,13 @@ func userScanMapperNullable(prefix string) scan.Mapper[*User] {
 				if buf.Name.Valid {
 					o.Name = buf.Name.V
 				}
+				if buf.Provider.Valid {
+					o.Provider = buf.Provider.V
+				}
+				if buf.Subject.Valid {
+					o.Subject = buf.Subject.V
+				}
+				o.IconURL = buf.IconURL
 				o.TeamID = buf.TeamID
 				if buf.IsAdmin.Valid {
 					o.IsAdmin = buf.IsAdmin.V

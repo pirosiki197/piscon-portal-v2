@@ -34,13 +34,19 @@ const toEnvironment = ({
 })
 
 export const handlers = [
-  http.get(`/oauth2/code`, () => {
+  http.get(`/auth/providers`, () => {
+    return HttpResponse.json([
+      { id: 'traq', name: 'traQ' },
+      { id: 'dev', name: 'dev' },
+    ])
+  }),
+  http.get(`/auth/{providerId}/login`, () => {
     // TODO
   }),
-  http.get(`/oauth2/callback`, () => {
+  http.get(`/auth/{providerId}/callback`, () => {
     // TODO
   }),
-  http.post(`/oauth2/logout`, () => {
+  http.post(`/auth/logout`, () => {
     // TODO
   }),
   http.get(`/users`, async () => {

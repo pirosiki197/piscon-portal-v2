@@ -2,7 +2,7 @@
 
 ## 開発環境
 
-プロジェクトルートディレクトリに以下のように `.env` ファイルを用意してください。`CLIENT_ID`と`CLIENT_SECRET`はtraQのものです。
+プロジェクトルートディレクトリに以下のように `.env` ファイルを用意してください。
 
 ```
 DB_USER=root
@@ -15,15 +15,20 @@ ROOT_URL=http://localhost:8080
 
 SESSION_SECRET=secret
 
-CLIENT_ID=my-client-id
-CLIENT_SECRET=my-client-secret
-
-ADMIN_USER_ID={{ traQ user ID (UUID) }}
-ADMIN_USER_NAME={{ traQ user name }}
+AUTH_PROVIDERS=dev
 ```
 
-traQで作成するClientは リダイレクトURL に `http://localhost:8080/api/oauth2/callback`、スコープに `openid`, `profile` を指定します。
 `task up` で portal server が 8080番 ポートで起動します。`task dev` でホットリロード付きで起動します。
+
+### ログイン
+
+`AUTH_PROVIDERS` に、ログインに使う認証手段をカンマ区切りで並べます。指定しなければ `traq` だけが有効になります。
+最初にログインしたユーザーが管理者になります。
+
+- `dev`: 名前を入力するだけで、その名前のユーザーとしてログインできます。traQ もネットワークも要りません。名前を変えれば何人でもログインできます。誰でも好きなユーザーになれるので、本番では有効にしないでください
+- `traq`: traQ の OAuth でログインします。traQ で Client を作り、`.env` に `CLIENT_ID` と `CLIENT_SECRET` を追記します。Client のリダイレクト URL には `http://localhost:8080/api/auth/traq/callback`、スコープには `openid`, `profile` を指定します
+
+両方を有効にするときは `AUTH_PROVIDERS=traq,dev` と書きます。
 
 ### AWS を使ったローカルでの動作
 

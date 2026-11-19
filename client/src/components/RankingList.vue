@@ -51,6 +51,7 @@ const { getTeamName, getTeamMembers } = useTeams()
               v-for="member in getTeamMembers(item.teamId)"
               :key="member.name"
               :name="member.name"
+              :icon-url="member.iconUrl"
             />
           </div>
         </div>

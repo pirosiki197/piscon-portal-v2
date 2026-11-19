@@ -1,7 +1,10 @@
 <script setup lang="ts">
-defineProps<{ name: string }>()
+import { Icon } from '@iconify/vue'
+
+defineProps<{ iconUrl?: string }>()
 </script>
 
 <template>
-  <img :src="`https://q.trap.jp/api/v3/public/icon/${name}`" alt="" width="24" height="24" />
+  <img v-if="iconUrl" :src="iconUrl" alt="" width="24" height="24" />
+  <Icon v-else icon="mdi:account-circle" width="24" height="24" />
 </template>

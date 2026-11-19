@@ -13,6 +13,14 @@ type DeleteTeamEnvironmentRes interface {
 	deleteTeamEnvironmentRes()
 }
 
+type GetAuthCallbackRes interface {
+	getAuthCallbackRes()
+}
+
+type GetAuthLoginRes interface {
+	getAuthLoginRes()
+}
+
 type GetBenchmarkQueueRes interface {
 	getBenchmarkQueueRes()
 }
@@ -35,14 +43,6 @@ type GetInstancesRes interface {
 
 type GetMeRes interface {
 	getMeRes()
-}
-
-type GetOauth2CallbackRes interface {
-	getOauth2CallbackRes()
-}
-
-type GetOauth2CodeRes interface {
-	getOauth2CodeRes()
 }
 
 type GetRankingRes interface {
@@ -93,12 +93,12 @@ type PatchTeamRes interface {
 	patchTeamRes()
 }
 
-type PostBenchmarkRes interface {
-	postBenchmarkRes()
+type PostAuthLogoutRes interface {
+	postAuthLogoutRes()
 }
 
-type PostOauth2LogoutRes interface {
-	postOauth2LogoutRes()
+type PostBenchmarkRes interface {
+	postBenchmarkRes()
 }
 
 type PostTeamRes interface {

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-defineProps<{ name: string }>()
+defineProps<{ name: string; iconUrl?: string }>()
 </script>
 
 <template>
   <div class="user-chip">
-    <UserAvatar :name="name" class="user-avatar" />
+    <UserAvatar :icon-url="iconUrl" class="user-avatar" />
     <span>{{ name }}</span>
   </div>
 </template>

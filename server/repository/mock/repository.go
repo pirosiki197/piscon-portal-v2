@@ -81,6 +81,45 @@ func (c *MockRepositoryAddAdminsCall) DoAndReturn(f func(context.Context, []uuid
 	return c
 }
 
+// CountUsers mocks base method.
+func (m *MockRepository) CountUsers(ctx context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountUsers", ctx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountUsers indicates an expected call of CountUsers.
+func (mr *MockRepositoryMockRecorder) CountUsers(ctx any) *MockRepositoryCountUsersCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountUsers", reflect.TypeOf((*MockRepository)(nil).CountUsers), ctx)
+	return &MockRepositoryCountUsersCall{Call: call}
+}
+
+// MockRepositoryCountUsersCall wrap *gomock.Call
+type MockRepositoryCountUsersCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockRepositoryCountUsersCall) Return(arg0 int64, arg1 error) *MockRepositoryCountUsersCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockRepositoryCountUsersCall) Do(f func(context.Context) (int64, error)) *MockRepositoryCountUsersCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockRepositoryCountUsersCall) DoAndReturn(f func(context.Context) (int64, error)) *MockRepositoryCountUsersCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // CreateBenchmark mocks base method.
 func (m *MockRepository) CreateBenchmark(ctx context.Context, benchmark domain.Benchmark) error {
 	m.ctrl.T.Helper()
@@ -845,6 +884,45 @@ func (c *MockRepositoryFindUserCall) Do(f func(context.Context, uuid.UUID) (doma
 
 // DoAndReturn rewrite *gomock.Call.DoAndReturn
 func (c *MockRepositoryFindUserCall) DoAndReturn(f func(context.Context, uuid.UUID) (domain.User, error)) *MockRepositoryFindUserCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
+// FindUserByIdentity mocks base method.
+func (m *MockRepository) FindUserByIdentity(ctx context.Context, provider, subject string) (domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindUserByIdentity", ctx, provider, subject)
+	ret0, _ := ret[0].(domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindUserByIdentity indicates an expected call of FindUserByIdentity.
+func (mr *MockRepositoryMockRecorder) FindUserByIdentity(ctx, provider, subject any) *MockRepositoryFindUserByIdentityCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindUserByIdentity", reflect.TypeOf((*MockRepository)(nil).FindUserByIdentity), ctx, provider, subject)
+	return &MockRepositoryFindUserByIdentityCall{Call: call}
+}
+
+// MockRepositoryFindUserByIdentityCall wrap *gomock.Call
+type MockRepositoryFindUserByIdentityCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockRepositoryFindUserByIdentityCall) Return(arg0 domain.User, arg1 error) *MockRepositoryFindUserByIdentityCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockRepositoryFindUserByIdentityCall) Do(f func(context.Context, string, string) (domain.User, error)) *MockRepositoryFindUserByIdentityCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockRepositoryFindUserByIdentityCall) DoAndReturn(f func(context.Context, string, string) (domain.User, error)) *MockRepositoryFindUserByIdentityCall {
 	c.Call = c.Call.DoAndReturn(f)
 	return c
 }

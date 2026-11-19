@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -22,7 +23,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/traPtitech/piscon-portal-v2/server/handler"
 	"github.com/traPtitech/piscon-portal-v2/server/repository"
-	"github.com/traPtitech/piscon-portal-v2/server/services/oauth2"
+	"github.com/traPtitech/piscon-portal-v2/server/services/auth/dev"
+	"github.com/traPtitech/piscon-portal-v2/server/services/auth/traq"
 	"github.com/traPtitech/piscon-portal-v2/server/usecase"
 	"github.com/traPtitech/piscon-portal-v2/server/utils/random"
 )
@@ -36,50 +38,37 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
+// NewPortalServer は、traQ のモックと dev の認証手段を有効にしたポータルを立てる。
 func NewPortalServer(useCase usecase.UseCase, repo repository.Repository) *httptest.Server {
 	e := echo.New()
 	server := httptest.NewTLSServer(e)
 
-	config := handler.Config{
-		RootURL:       server.URL,
-		SessionSecret: "secret",
-		Oauth2: oauth2.Config{
-			Issuer:       oauth2ServerURL,
-			ClientID:     "client-id",
-			ClientSecret: "client-secret",
-			AuthURL:      oauth2ServerURL + "/authorize",
-			TokenURL:     oauth2ServerURL + "/token",
-		},
-	}
-	h, err := handler.New(useCase, repo, config)
+	traqProvider, err := traq.New(context.Background(), traq.Config{
+		Issuer:       oauth2ServerURL,
+		ClientID:     "client-id",
+		ClientSecret: "client-secret",
+		AuthURL:      oauth2ServerURL + "/authorize",
+		TokenURL:     oauth2ServerURL + "/token",
+	}, server.URL+handler.CallbackPath(traq.ProviderID))
 	if err != nil {
 		panic(err)
 	}
+	devProvider := dev.New(handler.AuthorizePagePath(dev.ProviderID), handler.CallbackPath(dev.ProviderID))
 
+	h := handler.New(useCase, repo, handler.Config{
+		SessionSecret: "secret",
+		AuthProviders: []handler.AuthProvider{traqProvider, devProvider},
+	})
 	h.SetupRoutes(e)
 
 	return server
 }
 
 func NewHandler(useCase usecase.UseCase, repo repository.Repository, sessionManager handler.SessionManager) *handler.Handler {
-	config := handler.Config{
-		RootURL:       "http://localhost",
-		SessionSecret: "secret",
-		Oauth2: oauth2.Config{
-			Issuer:       oauth2ServerURL,
-			ClientID:     "client-id",
-			ClientSecret: "client-secret",
-			AuthURL:      oauth2ServerURL + "/authorize",
-			TokenURL:     oauth2ServerURL + "/token",
-		},
+	return handler.New(useCase, repo, handler.Config{
+		SessionSecret:  "secret",
 		SessionManager: sessionManager,
-	}
-	h, err := handler.New(useCase, repo, config)
-	if err != nil {
-		panic(err)
-	}
-
-	return h
+	})
 }
 
 func NewClient(server *httptest.Server) *http.Client {
@@ -91,7 +80,8 @@ func NewClient(server *httptest.Server) *http.Client {
 	return client
 }
 
-func Login(t *testing.T, server *httptest.Server, client *http.Client, userID uuid.UUID) error {
+// Login は、traQ のモックで、sub が subject の外部アカウントとしてログインする。
+func Login(t *testing.T, server *httptest.Server, client *http.Client, subject string) error {
 	t.Helper()
 
 	// not following redirect for the first request
@@ -99,7 +89,7 @@ func Login(t *testing.T, server *httptest.Server, client *http.Client, userID uu
 		return http.ErrUseLastResponse
 	}
 
-	codeRes, err := client.Get(joinPath(t, server.URL, "/api/oauth2/code"))
+	codeRes, err := client.Get(joinPath(t, server.URL, "/api/auth/traq/login"))
 	if err != nil {
 		t.Error(err)
 		return fmt.Errorf("get authorization URL: %w", err)
@@ -117,7 +107,7 @@ func Login(t *testing.T, server *httptest.Server, client *http.Client, userID uu
 		return fmt.Errorf("parse authorization URL: %w", err)
 	}
 	q := authURL.Query()
-	q.Add("user", userID.String())
+	q.Add("user", subject)
 	authURL.RawQuery = q.Encode()
 
 	// from here, follow redirect

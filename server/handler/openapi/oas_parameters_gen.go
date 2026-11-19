@@ -20,6 +20,19 @@ type DeleteTeamEnvironmentParams struct {
 	TeamId TeamId
 }
 
+// GetAuthCallbackParams is parameters of getAuthCallback operation.
+type GetAuthCallbackParams struct {
+	// 認証手段のID.
+	ProviderId AuthProviderId
+	State      string
+}
+
+// GetAuthLoginParams is parameters of getAuthLogin operation.
+type GetAuthLoginParams struct {
+	// 認証手段のID.
+	ProviderId AuthProviderId
+}
+
 // GetBenchmarkResultParams is parameters of getBenchmarkResult operation.
 type GetBenchmarkResultParams struct {
 	// ベンチマークID.
@@ -30,12 +43,6 @@ type GetBenchmarkResultParams struct {
 type GetBenchmarksParams struct {
 	// ベンチマークのステータス。指定が無い場合は全て.
 	Status OptBenchmarkStatus `json:",omitempty,omitzero"`
-}
-
-// GetOauth2CallbackParams is parameters of getOauth2Callback operation.
-type GetOauth2CallbackParams struct {
-	// TraQからのAuthorization Code.
-	Code string
 }
 
 // GetRankingParams is parameters of getRanking operation.

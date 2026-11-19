@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { apiBaseUrl } from '@/api'
 import MainLayout from '@/layouts/MainLayout.vue'
-import { useMe } from '@/lib/useServerData'
+import { useAuthProviders, useMe } from '@/lib/useServerData'
 import { computed, effect } from 'vue'
 import { RouterView, useRouter } from 'vue-router'
 
 const { data: me, isLoading } = useMe()
+const { data: authProviders } = useAuthProviders()
 const router = useRouter()
 
 const SESSION_STORAGE_KEY_REDIRECT = 'redirect'
@@ -15,9 +16,9 @@ const status = computed(() => {
   return me.value ? 'authenticated' : 'unauthenticated'
 })
 
-const loginHandler = () => {
+const loginHandler = (providerId: string) => {
   sessionStorage.setItem(SESSION_STORAGE_KEY_REDIRECT, window.location.pathname)
-  window.location.href = apiBaseUrl + '/oauth2/code'
+  window.location.href = `${apiBaseUrl}/auth/${encodeURIComponent(providerId)}/login`
 }
 
 effect(() => {
@@ -38,7 +39,15 @@ effect(() => {
     </div>
     <div v-if="status === 'unauthenticated'" class="unauthenticated-message">
       <div class="portal-title">PISCON Portal v2</div>
-      <MainButton @click="loginHandler">traQでログイン</MainButton>
+      <div class="login-buttons">
+        <MainButton
+          v-for="provider in authProviders"
+          :key="provider.id"
+          @click="loginHandler(provider.id)"
+        >
+          {{ provider.name }}でログイン
+        </MainButton>
+      </div>
       <div class="caption-message">利用するにはログインが必要です</div>
     </div>
     <RouterView v-if="status === 'authenticated'" :key="$route.fullPath" />
@@ -59,6 +68,11 @@ effect(() => {
   place-content: center;
   height: calc(100vh - 11rem);
   gap: 1rem;
+}
+
+.login-buttons {
+  display: grid;
+  gap: 0.5rem;
 }
 
 .portal-title {

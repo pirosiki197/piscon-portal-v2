@@ -69,9 +69,6 @@ local:
 
   portal:
     domain: "{{ ポータルを配信するドメイン (例: piscon.trap.jp) }}"
-    admin:
-      user_id: "{{ 初期管理者の traQ user ID (UUID) }}"
-      user_name: "{{ 初期管理者の traQ user name }}"
 ```
 
 ### `hosts`
@@ -92,6 +89,8 @@ piscon.trap.jp # ポータルのドメイン
 ```bash
 uv run ansible-playbook portal.yml
 ```
+
+デプロイしたら、運営がすぐにポータルへログインしてください。最初にログインしたユーザーが管理者になります。
 
 ### runner のデプロイ
 
