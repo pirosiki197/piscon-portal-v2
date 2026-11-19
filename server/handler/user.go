@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"net/url"
 
 	"github.com/labstack/echo/v4"
 	"github.com/traPtitech/piscon-portal-v2/server/domain"
@@ -47,6 +48,10 @@ func toOpenAPIUser(user domain.User) *openapi.User {
 	}
 	if user.TeamID.Valid {
 		res.TeamId = openapi.NewOptTeamId(openapi.TeamId(user.TeamID.UUID))
+	}
+	// 保存されている URL が壊れていても、ユーザーの情報は返せるようにアイコンだけを省く
+	if iconURL, err := url.Parse(user.IconURL); user.IconURL != "" && err == nil {
+		res.IconUrl = openapi.NewOptURI(*iconURL)
 	}
 	return res
 }

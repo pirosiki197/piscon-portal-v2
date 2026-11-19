@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/samber/lo"
 	"github.com/stephenafamo/bob"
-	"github.com/stephenafamo/bob/dialect/mysql"
+	bobmysql "github.com/stephenafamo/bob/dialect/mysql"
 	"github.com/stephenafamo/bob/dialect/mysql/sm"
 	"github.com/stephenafamo/bob/dialect/mysql/um"
 	"github.com/traPtitech/piscon-portal-v2/server/domain"
@@ -20,6 +21,28 @@ import (
 
 func (r *Repository) FindUser(ctx context.Context, id uuid.UUID) (domain.User, error) {
 	return findUser(ctx, r.executor(ctx), id.String())
+}
+
+func (r *Repository) FindUserByIdentity(ctx context.Context, provider, subject string) (domain.User, error) {
+	user, err := models.Users.Query(
+		models.SelectWhere.Users.Provider.EQ(provider),
+		models.SelectWhere.Users.Subject.EQ(subject),
+	).One(ctx, r.executor(ctx))
+	if errors.Is(err, sql.ErrNoRows) {
+		return domain.User{}, repository.ErrNotFound
+	}
+	if err != nil {
+		return domain.User{}, fmt.Errorf("find user by identity: %w", err)
+	}
+	return toDomainUser(user)
+}
+
+func (r *Repository) CountUsers(ctx context.Context) (int64, error) {
+	count, err := models.Users.Query().Count(ctx, r.executor(ctx))
+	if err != nil {
+		return 0, fmt.Errorf("count users: %w", err)
+	}
+	return count, nil
 }
 
 func (r *Repository) CreateUser(ctx context.Context, user domain.User) error {
@@ -58,10 +81,16 @@ func findUser(ctx context.Context, executor bob.Executor, id string) (domain.Use
 
 func createUser(ctx context.Context, executor bob.Executor, user domain.User) error {
 	_, err := models.Users.Insert(&models.UserSetter{
-		ID:      lo.ToPtr(user.ID.String()),
-		Name:    lo.ToPtr(user.Name),
-		IsAdmin: &user.IsAdmin,
+		ID:       lo.ToPtr(user.ID.String()),
+		Name:     lo.ToPtr(user.Name),
+		Provider: lo.ToPtr(user.Provider),
+		Subject:  lo.ToPtr(user.Subject),
+		IconURL:  lo.ToPtr(sql.Null[string]{V: user.IconURL, Valid: user.IconURL != ""}),
+		IsAdmin:  &user.IsAdmin,
 	}).Exec(ctx, executor)
+	if mysqlErr, ok := errors.AsType[*mysql.MySQLError](err); ok && mysqlErr.Number == mysqlErrDuplicateEntry {
+		return repository.ErrAlreadyExists
+	}
 	if err != nil {
 		return fmt.Errorf("create user: %w", err)
 	}
@@ -78,7 +107,7 @@ func (r *Repository) GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]doma
 		anyIDs[i] = id.String()
 	}
 	users, err := models.Users.Query(
-		sm.Where(models.Users.Columns.ID.In(mysql.Arg(anyIDs...))),
+		sm.Where(models.Users.Columns.ID.In(bobmysql.Arg(anyIDs...))),
 	).All(ctx, r.executor(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("get users by ids: %w", err)
@@ -97,7 +126,7 @@ func (r *Repository) GetUsersByIDs(ctx context.Context, ids []uuid.UUID) ([]doma
 
 func (r *Repository) GetAdmins(ctx context.Context) ([]domain.User, error) {
 	adminUsers, err := models.Users.Query(
-		sm.Where(models.Users.Columns.IsAdmin.EQ(mysql.Arg(true))),
+		sm.Where(models.Users.Columns.IsAdmin.EQ(bobmysql.Arg(true))),
 	).All(ctx, r.executor(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("get admins: %w", err)
@@ -126,7 +155,7 @@ func (r *Repository) AddAdmins(ctx context.Context, userIDs []uuid.UUID) error {
 	}
 	_, err := models.Users.Update(
 		um.SetCol(dbinfo.Users.Columns.IsAdmin.Name).To(true),
-		um.Where(models.Users.Columns.ID.In(mysql.Arg(anyIDs...))),
+		um.Where(models.Users.Columns.ID.In(bobmysql.Arg(anyIDs...))),
 	).Exec(ctx, r.executor(ctx))
 	if err != nil {
 		return fmt.Errorf("add admins: %w", err)
@@ -146,7 +175,7 @@ func (r *Repository) DeleteAdmins(ctx context.Context, userIDs []uuid.UUID) erro
 	}
 	_, err := models.Users.Update(
 		um.SetCol(dbinfo.Users.Columns.IsAdmin.Name).To(false),
-		um.Where(models.Users.Columns.ID.In(mysql.Arg(anyIDs...))),
+		um.Where(models.Users.Columns.ID.In(bobmysql.Arg(anyIDs...))),
 	).Exec(ctx, r.executor(ctx))
 	if err != nil {
 		return fmt.Errorf("delete admins: %w", err)
@@ -174,9 +203,12 @@ func toDomainUser(user *models.User) (domain.User, error) {
 	}
 
 	return domain.User{
-		ID:      userID,
-		Name:    user.Name,
-		IsAdmin: user.IsAdmin,
-		TeamID:  teamID,
+		ID:       userID,
+		Name:     user.Name,
+		Provider: user.Provider,
+		Subject:  user.Subject,
+		IconURL:  user.IconURL.V,
+		IsAdmin:  user.IsAdmin,
+		TeamID:   teamID,
 	}, nil
 }

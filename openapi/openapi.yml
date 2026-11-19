@@ -7,8 +7,8 @@ servers:
     description: "Local server"
 
 tags:
-  - name: "oauth2"
-    description: "OAuth2を使った部員の認証"
+  - name: "auth"
+    description: "ログイン"
   - name: "users"
     description: "部員に関するAPI"
   - name: "teams"
@@ -25,84 +25,91 @@ tags:
     description: "ドキュメントに関するAPI"
 
 paths:
-  /oauth2/code:
+  /auth/providers:
     get:
-      operationId: "getOauth2Code"
+      operationId: "getAuthProviders"
       tags:
-        - "oauth2"
-      summary: "OAuth2認証コードの取得・traQの認可ページにリダイレクト"
-      description: "OAuth2の認証に必要なCode Verifierを生成し、traQの認可ページにリダイレクトします。"
+        - "auth"
+      summary: "有効な認証手段の一覧"
+      description: "ログインに使える認証手段の一覧を返します。"
       responses:
-        303:
-          description: "traQの認可ページにリダイレクトします。"
-          headers:
-            Location:
-              schema:
-                type: "string"
-                format: "uri"
-                example: "https://q.trap.jp/oauth2/authorize?response_type=code&client_id=client_id&redirect_uri=http://localhost:8080/api/oauth2/callback&state=state&code_challenge=code_challenge&code_challenge_method=S256"
-        500:
-          $ref: "#/components/responses/InternalServerError"
-
-  /oauth2/callback:
-    get:
-      operationId: "getOauth2Callback"
-      tags:
-        - "oauth2"
-      summary: "traQからのリダイレクト"
-      description: "traQ上での認証後にtraQから Authorization Codeがクエリパラメーターにつけられて、 リダイレクトされます。"
-      parameters:
-        - name: "code"
-          in: "query"
-          description: "traQからのAuthorization Code"
-          required: true
-          schema:
-            type: "string"
-            example: "authorization_code"
-      responses:
-        303:
-          description: "認証に成功し、トップページにリダイレクトします。"
-          headers:
-            Location:
-              schema:
-                type: "string"
-                format: "uri"
-                example: "http://localhost:8080/"
-        400:
-          description: "セッションやAuthorization Codeに誤りがあり、認証に失敗しました"
+        200:
+          description: "有効な認証手段の一覧"
           content:
             application/json:
               schema:
-                type: "object"
-                properties:
-                  message:
-                    type: "string"
-                    example: "認証に失敗しました。"
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/AuthProvider"
+
+  /auth/{providerId}/login:
+    get:
+      operationId: "getAuthLogin"
+      tags:
+        - "auth"
+      summary: "ログインを始める"
+      description: "state を発行し、認証手段の認可ページにリダイレクトします。"
+      parameters:
+        - $ref: "#/components/parameters/authProviderIdInPath"
+      responses:
+        303:
+          description: "認証手段の認可ページにリダイレクトします。"
+          headers:
+            Location:
+              schema:
+                type: "string"
+                format: "uri"
+        404:
+          $ref: "#/components/responses/NotFound"
         500:
           $ref: "#/components/responses/InternalServerError"
 
-  /oauth2/logout:
+  /auth/{providerId}/callback:
+    get:
+      operationId: "getAuthCallback"
+      tags:
+        - "auth"
+      summary: "認証手段からのリダイレクト"
+      description: "認証手段での認証後に、認証手段からリダイレクトされます。クエリパラメーターは認証手段ごとに異なります。"
+      parameters:
+        - $ref: "#/components/parameters/authProviderIdInPath"
+        - name: "state"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        303:
+          description: "ログインに成功し、トップページにリダイレクトします。"
+          headers:
+            Location:
+              schema:
+                type: "string"
+                format: "uri"
+                example: "/"
+        400:
+          description: "state の誤り、認証の失敗、ユーザー名の重複のいずれかで、ログインに失敗しました。"
+          content:
+            text/plain:
+              schema:
+                type: "string"
+        404:
+          $ref: "#/components/responses/NotFound"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+
+  /auth/logout:
     post:
       summary: "ログアウト"
       description: "ログアウトし、セッションを削除します"
       tags:
-        - "oauth2"
+        - "auth"
       security:
         - UserAuth: []
-      operationId: "postOauth2Logout"
+      operationId: "postAuthLogout"
       responses:
         200:
           description: "ログアウトしました。"
-        400:
-          description: "セッションに誤りがあり、認証に失敗しました"
-          content:
-            application/json:
-              schema:
-                type: "object"
-                properties:
-                  message:
-                    type: "string"
-                    example: "誤りの内容"
         401:
           $ref: "#/components/responses/Unauthorized"
         500:
@@ -821,6 +828,13 @@ components:
               - instanceId
 
   parameters:
+    authProviderIdInPath:
+      name: "providerId"
+      in: "path"
+      description: "認証手段のID"
+      required: true
+      schema:
+        $ref: "#/components/schemas/AuthProviderId"
     teamId:
       name: "teamId"
       in: "path"
@@ -957,15 +971,32 @@ components:
       type: "string"
       example: "192.0.2.0"
 
+    AuthProviderId:
+      type: "string"
+      example: "traq"
+      description: "認証手段のID"
+    AuthProvider:
+      type: "object"
+      description: "ログインに使える認証手段"
+      properties:
+        id:
+          $ref: "#/components/schemas/AuthProviderId"
+        name:
+          type: "string"
+          example: "traQ"
+          description: "ログインボタンに表示する名前"
+      required:
+        - id
+        - name
     UserId:
       type: "string"
       format: "uuid"
       example: "00000000-0000-0000-0000-000000000000"
-      description: "traQのUUID"
+      description: "ポータル内のユーザーID"
     UserName:
       type: "string"
       example: "ikura-hamu"
-      description: "traQのID"
+      description: "ポータル内で一意なユーザー名"
     User:
       type: "object"
       description: "部員"
@@ -980,6 +1011,11 @@ components:
           type: "boolean"
           example: false
           description: "管理者権限を持っているかどうか"
+        iconUrl:
+          type: "string"
+          format: "uri"
+          example: "https://q.trap.jp/api/v3/public/icon/ikura-hamu"
+          description: "アイコン画像のURL。ない場合は省略されます"
       required:
         - id
         - name

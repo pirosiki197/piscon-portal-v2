@@ -3,6 +3,7 @@
 package openapi
 
 import (
+	"io"
 	"net/url"
 	"time"
 
@@ -34,6 +35,36 @@ func (s *AdminAuth) SetAPIKey(val string) {
 func (s *AdminAuth) SetRoles(val []string) {
 	s.Roles = val
 }
+
+// ログインに使える認証手段.
+// Ref: #/components/schemas/AuthProvider
+type AuthProvider struct {
+	ID AuthProviderId `json:"id"`
+	// ログインボタンに表示する名前.
+	Name string `json:"name"`
+}
+
+// GetID returns the value of ID.
+func (s *AuthProvider) GetID() AuthProviderId {
+	return s.ID
+}
+
+// GetName returns the value of Name.
+func (s *AuthProvider) GetName() string {
+	return s.Name
+}
+
+// SetID sets the value of ID.
+func (s *AuthProvider) SetID(val AuthProviderId) {
+	s.ID = val
+}
+
+// SetName sets the value of Name.
+func (s *AuthProvider) SetName(val string) {
+	s.Name = val
+}
+
+type AuthProviderId string
 
 // ベンチマークのスコア.
 // Ref: #/components/schemas/BenchScore
@@ -1027,6 +1058,56 @@ func (*Forbidden) patchTeamRes()              {}
 func (*Forbidden) postBenchmarkRes()          {}
 func (*Forbidden) putAdminsRes()              {}
 
+type GetAuthCallbackBadRequest struct {
+	Data io.Reader
+}
+
+// Read reads data from the Data reader.
+//
+// Kept to satisfy the io.Reader interface.
+func (s GetAuthCallbackBadRequest) Read(p []byte) (n int, err error) {
+	if s.Data == nil {
+		return 0, io.EOF
+	}
+	return s.Data.Read(p)
+}
+
+func (*GetAuthCallbackBadRequest) getAuthCallbackRes() {}
+
+// GetAuthCallbackSeeOther is response for GetAuthCallback operation.
+type GetAuthCallbackSeeOther struct {
+	Location OptURI
+}
+
+// GetLocation returns the value of Location.
+func (s *GetAuthCallbackSeeOther) GetLocation() OptURI {
+	return s.Location
+}
+
+// SetLocation sets the value of Location.
+func (s *GetAuthCallbackSeeOther) SetLocation(val OptURI) {
+	s.Location = val
+}
+
+func (*GetAuthCallbackSeeOther) getAuthCallbackRes() {}
+
+// GetAuthLoginSeeOther is response for GetAuthLogin operation.
+type GetAuthLoginSeeOther struct {
+	Location OptURI
+}
+
+// GetLocation returns the value of Location.
+func (s *GetAuthLoginSeeOther) GetLocation() OptURI {
+	return s.Location
+}
+
+// SetLocation sets the value of Location.
+func (s *GetAuthLoginSeeOther) SetLocation(val OptURI) {
+	s.Location = val
+}
+
+func (*GetAuthLoginSeeOther) getAuthLoginRes() {}
+
 type GetBenchmarkQueueOKApplicationJSON []BenchmarkListItem
 
 func (*GetBenchmarkQueueOKApplicationJSON) getBenchmarkQueueRes() {}
@@ -1054,56 +1135,6 @@ func (*GetDocsOK) getDocsRes() {}
 type GetInstancesOKApplicationJSON []Instance
 
 func (*GetInstancesOKApplicationJSON) getInstancesRes() {}
-
-type GetOauth2CallbackBadRequest struct {
-	Message OptString `json:"message"`
-}
-
-// GetMessage returns the value of Message.
-func (s *GetOauth2CallbackBadRequest) GetMessage() OptString {
-	return s.Message
-}
-
-// SetMessage sets the value of Message.
-func (s *GetOauth2CallbackBadRequest) SetMessage(val OptString) {
-	s.Message = val
-}
-
-func (*GetOauth2CallbackBadRequest) getOauth2CallbackRes() {}
-
-// GetOauth2CallbackSeeOther is response for GetOauth2Callback operation.
-type GetOauth2CallbackSeeOther struct {
-	Location OptURI
-}
-
-// GetLocation returns the value of Location.
-func (s *GetOauth2CallbackSeeOther) GetLocation() OptURI {
-	return s.Location
-}
-
-// SetLocation sets the value of Location.
-func (s *GetOauth2CallbackSeeOther) SetLocation(val OptURI) {
-	s.Location = val
-}
-
-func (*GetOauth2CallbackSeeOther) getOauth2CallbackRes() {}
-
-// GetOauth2CodeSeeOther is response for GetOauth2Code operation.
-type GetOauth2CodeSeeOther struct {
-	Location OptURI
-}
-
-// GetLocation returns the value of Location.
-func (s *GetOauth2CodeSeeOther) GetLocation() OptURI {
-	return s.Location
-}
-
-// SetLocation sets the value of Location.
-func (s *GetOauth2CodeSeeOther) SetLocation(val OptURI) {
-	s.Location = val
-}
-
-func (*GetOauth2CodeSeeOther) getOauth2CodeRes() {}
 
 type GetRankingOKApplicationJSON []RankingItem
 
@@ -1357,14 +1388,14 @@ func (s *InternalServerError) SetMessage(val OptString) {
 func (*InternalServerError) createTeamEnvironmentRes()  {}
 func (*InternalServerError) deleteBenchmarkRes()        {}
 func (*InternalServerError) deleteTeamEnvironmentRes()  {}
+func (*InternalServerError) getAuthCallbackRes()        {}
+func (*InternalServerError) getAuthLoginRes()           {}
 func (*InternalServerError) getBenchmarkQueueRes()      {}
 func (*InternalServerError) getBenchmarkResultRes()     {}
 func (*InternalServerError) getBenchmarksRes()          {}
 func (*InternalServerError) getDocsRes()                {}
 func (*InternalServerError) getInstancesRes()           {}
 func (*InternalServerError) getMeRes()                  {}
-func (*InternalServerError) getOauth2CallbackRes()      {}
-func (*InternalServerError) getOauth2CodeRes()          {}
 func (*InternalServerError) getRankingRes()             {}
 func (*InternalServerError) getScoresRes()              {}
 func (*InternalServerError) getTeamBenchmarkResultRes() {}
@@ -1377,8 +1408,8 @@ func (*InternalServerError) getUsersRes()               {}
 func (*InternalServerError) patchDocsRes()              {}
 func (*InternalServerError) patchTeamEnvironmentRes()   {}
 func (*InternalServerError) patchTeamRes()              {}
+func (*InternalServerError) postAuthLogoutRes()         {}
 func (*InternalServerError) postBenchmarkRes()          {}
-func (*InternalServerError) postOauth2LogoutRes()       {}
 func (*InternalServerError) postTeamRes()               {}
 func (*InternalServerError) putAdminsRes()              {}
 
@@ -1401,6 +1432,8 @@ func (s *NotFound) SetMessage(val OptString) {
 func (*NotFound) createTeamEnvironmentRes()  {}
 func (*NotFound) deleteBenchmarkRes()        {}
 func (*NotFound) deleteTeamEnvironmentRes()  {}
+func (*NotFound) getAuthCallbackRes()        {}
+func (*NotFound) getAuthLoginRes()           {}
 func (*NotFound) getBenchmarkResultRes()     {}
 func (*NotFound) getTeamBenchmarkResultRes() {}
 func (*NotFound) getTeamBenchmarksRes()      {}
@@ -1957,6 +1990,11 @@ func (s *PatchTeamReq) SetGithubIds(val []GitHubId) {
 	s.GithubIds = val
 }
 
+// PostAuthLogoutOK is response for PostAuthLogout operation.
+type PostAuthLogoutOK struct{}
+
+func (*PostAuthLogoutOK) postAuthLogoutRes() {}
+
 type PostBenchmarkReq struct {
 	InstanceId InstanceId `json:"instanceId"`
 }
@@ -1970,27 +2008,6 @@ func (s *PostBenchmarkReq) GetInstanceId() InstanceId {
 func (s *PostBenchmarkReq) SetInstanceId(val InstanceId) {
 	s.InstanceId = val
 }
-
-type PostOauth2LogoutBadRequest struct {
-	Message OptString `json:"message"`
-}
-
-// GetMessage returns the value of Message.
-func (s *PostOauth2LogoutBadRequest) GetMessage() OptString {
-	return s.Message
-}
-
-// SetMessage sets the value of Message.
-func (s *PostOauth2LogoutBadRequest) SetMessage(val OptString) {
-	s.Message = val
-}
-
-func (*PostOauth2LogoutBadRequest) postOauth2LogoutRes() {}
-
-// PostOauth2LogoutOK is response for PostOauth2Logout operation.
-type PostOauth2LogoutOK struct{}
-
-func (*PostOauth2LogoutOK) postOauth2LogoutRes() {}
 
 type PostTeamReq struct {
 	Name TeamName `json:"name"`
@@ -2520,8 +2537,8 @@ func (*Unauthorized) getUsersRes()               {}
 func (*Unauthorized) patchDocsRes()              {}
 func (*Unauthorized) patchTeamEnvironmentRes()   {}
 func (*Unauthorized) patchTeamRes()              {}
+func (*Unauthorized) postAuthLogoutRes()         {}
 func (*Unauthorized) postBenchmarkRes()          {}
-func (*Unauthorized) postOauth2LogoutRes()       {}
 func (*Unauthorized) postTeamRes()               {}
 func (*Unauthorized) putAdminsRes()              {}
 
@@ -2533,6 +2550,8 @@ type User struct {
 	TeamId OptTeamId `json:"teamId"`
 	// 管理者権限を持っているかどうか.
 	IsAdmin bool `json:"isAdmin"`
+	// アイコン画像のURL。ない場合は省略されます.
+	IconUrl OptURI `json:"iconUrl"`
 }
 
 // GetID returns the value of ID.
@@ -2555,6 +2574,11 @@ func (s *User) GetIsAdmin() bool {
 	return s.IsAdmin
 }
 
+// GetIconUrl returns the value of IconUrl.
+func (s *User) GetIconUrl() OptURI {
+	return s.IconUrl
+}
+
 // SetID sets the value of ID.
 func (s *User) SetID(val UserId) {
 	s.ID = val
@@ -2573,6 +2597,11 @@ func (s *User) SetTeamId(val OptTeamId) {
 // SetIsAdmin sets the value of IsAdmin.
 func (s *User) SetIsAdmin(val bool) {
 	s.IsAdmin = val
+}
+
+// SetIconUrl sets the value of IconUrl.
+func (s *User) SetIconUrl(val OptURI) {
+	s.IconUrl = val
 }
 
 func (*User) getMeRes() {}

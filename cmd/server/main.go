@@ -1,29 +1,31 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/go-sql-driver/mysql"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/traPtitech/piscon-portal-v2/bundle"
-	"github.com/traPtitech/piscon-portal-v2/server/domain"
 	"github.com/traPtitech/piscon-portal-v2/server/handler"
 	"github.com/traPtitech/piscon-portal-v2/server/repository"
 	dbrepo "github.com/traPtitech/piscon-portal-v2/server/repository/db"
 	"github.com/traPtitech/piscon-portal-v2/server/server"
+	"github.com/traPtitech/piscon-portal-v2/server/services/auth/dev"
+	"github.com/traPtitech/piscon-portal-v2/server/services/auth/traq"
 	"github.com/traPtitech/piscon-portal-v2/server/services/github"
 	"github.com/traPtitech/piscon-portal-v2/server/services/instance"
 	"github.com/traPtitech/piscon-portal-v2/server/services/instance/aws"
 	"github.com/traPtitech/piscon-portal-v2/server/services/instance/fake"
 	"github.com/traPtitech/piscon-portal-v2/server/services/instance/incus"
-	"github.com/traPtitech/piscon-portal-v2/server/services/oauth2"
 	"github.com/traPtitech/piscon-portal-v2/server/usecase"
 )
 
@@ -32,16 +34,13 @@ func main() {
 
 	e.Use(middleware.RequestLogger())
 
+	authProviders, err := provideAuthProviders()
+	if err != nil {
+		log.Fatal("failed to create auth providers:", err)
+	}
 	handlerConfig := handler.Config{
-		RootURL:       os.Getenv("ROOT_URL"),
 		SessionSecret: os.Getenv("SESSION_SECRET"),
-		Oauth2: oauth2.Config{
-			Issuer:       "https://q.trap.jp",
-			ClientID:     os.Getenv("CLIENT_ID"),
-			ClientSecret: os.Getenv("CLIENT_SECRET"),
-			AuthURL:      "https://q.trap.jp/api/v3/oauth2/authorize",
-			TokenURL:     "https://q.trap.jp/api/v3/oauth2/token",
-		},
+		AuthProviders: authProviders,
 	}
 
 	problemBundle, err := provideBundle()
@@ -59,15 +58,9 @@ func main() {
 	githubService := github.NewHTTPGitHubService()
 
 	useCase := usecase.New(provideUseCaseConfig(problemBundle), repo, manager, envManager, githubService)
-	handler, err := handler.New(useCase, repo, handlerConfig)
-	if err != nil {
-		panic(err)
-	}
+	handler := handler.New(useCase, repo, handlerConfig)
 	handler.SetupRoutes(e)
 
-	if err := setupAdminUser(repo); err != nil {
-		log.Fatal("failed to setup admin user:", err)
-	}
 	if err := registerProblem(repo, problemBundle); err != nil {
 		log.Fatal("failed to register problem:", err)
 	}
@@ -218,46 +211,36 @@ func provideIncusManagers(problemBundle *bundle.Bundle) (instance.Manager, insta
 	return client, client, nil
 }
 
-func setupAdminUser(repo repository.Repository) error {
-	adminUserIDStr := os.Getenv("ADMIN_USER_ID")
-	if adminUserIDStr == "" {
-		return errors.New("ADMIN_USER_ID is not set")
-	}
-
-	adminUserID, err := uuid.Parse(adminUserIDStr)
-	if err != nil {
-		return fmt.Errorf("parse ADMIN_USER_ID: %w", err)
-	}
-
-	adminUserName := os.Getenv("ADMIN_USER_NAME")
-	if adminUserName == "" {
-		return errors.New("ADMIN_USER_NAME is not set")
-	}
-
-	ctx := context.Background()
-
-	_, err = repo.FindUser(ctx, adminUserID)
-	if err == nil {
-		// user already exists
-		err := repo.AddAdmins(ctx, []uuid.UUID{adminUserID})
-		if err != nil {
-			return fmt.Errorf("add admin role: %w", err)
+// provideAuthProviders は、AUTH_PROVIDERS にカンマ区切りで並べた認証手段を作る。AUTH_PROVIDERS が空なら traQ だけを作る。
+func provideAuthProviders() ([]handler.AuthProvider, error) {
+	ids := strings.Split(cmp.Or(os.Getenv("AUTH_PROVIDERS"), traq.ProviderID), ",")
+	providers := make([]handler.AuthProvider, 0, len(ids))
+	for _, id := range ids {
+		switch strings.TrimSpace(id) {
+		case traq.ProviderID:
+			callbackURL, err := url.JoinPath(os.Getenv("ROOT_URL"), handler.CallbackPath(traq.ProviderID))
+			if err != nil {
+				return nil, fmt.Errorf("join traQ callback URL: %w", err)
+			}
+			p, err := traq.New(context.Background(), traq.Config{
+				Issuer:       "https://q.trap.jp",
+				ClientID:     os.Getenv("CLIENT_ID"),
+				ClientSecret: os.Getenv("CLIENT_SECRET"),
+				AuthURL:      "https://q.trap.jp/api/v3/oauth2/authorize",
+				TokenURL:     "https://q.trap.jp/api/v3/oauth2/token",
+			}, callbackURL)
+			if err != nil {
+				return nil, fmt.Errorf("create traQ auth provider: %w", err)
+			}
+			providers = append(providers, p)
+		case dev.ProviderID:
+			log.Println("WARNING: dev login is enabled. Anyone can log in as any user.")
+			providers = append(providers, dev.New(handler.AuthorizePagePath(dev.ProviderID), handler.CallbackPath(dev.ProviderID)))
+		default:
+			return nil, fmt.Errorf("unknown auth provider in AUTH_PROVIDERS: %q", id)
 		}
-		return nil
 	}
-	if !errors.Is(err, repository.ErrNotFound) {
-		return fmt.Errorf("find user: %w", err)
-	}
-
-	// user not found, create new user
-	adminUser := domain.NewUser(adminUserID, adminUserName)
-	adminUser.IsAdmin = true
-
-	err = repo.CreateUser(ctx, adminUser)
-	if err != nil {
-		return fmt.Errorf("create admin user: %w", err)
-	}
-	return nil
+	return providers, nil
 }
 
 // registerProblem は、問題バンドルの問題を DB に記録する。問題バンドルを使わない場合は何もしない。

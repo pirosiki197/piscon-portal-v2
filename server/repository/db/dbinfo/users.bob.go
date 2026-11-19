@@ -33,6 +33,33 @@ var Users = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		Provider: column{
+			Name:      "provider",
+			DBType:    "varchar(32)",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		Subject: column{
+			Name:      "subject",
+			DBType:    "varchar(255)",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		IconURL: column{
+			Name:      "icon_url",
+			DBType:    "varchar(2048)",
+			Default:   "",
+			Comment:   "",
+			Nullable:  true,
+			Generated: false,
+			AutoIncr:  false,
+		},
 		TeamID: column{
 			Name:      "team_id",
 			DBType:    "varchar(36)",
@@ -79,6 +106,24 @@ var Users = Table[
 			Unique:  true,
 			Comment: "",
 		},
+		Provider: index{
+			Type: "BTREE",
+			Name: "provider",
+			Columns: []indexColumn{
+				{
+					Name:         "provider",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+				{
+					Name:         "subject",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+			},
+			Unique:  true,
+			Comment: "",
+		},
 		TeamID: index{
 			Type: "BTREE",
 			Name: "team_id",
@@ -115,33 +160,42 @@ var Users = Table[
 			Columns: []string{"name"},
 			Comment: "",
 		},
+		Provider: constraint{
+			Name:    "provider",
+			Columns: []string{"provider", "subject"},
+			Comment: "",
+		},
 	},
 
 	Comment: "",
 }
 
 type userColumns struct {
-	ID      column
-	Name    column
-	TeamID  column
-	IsAdmin column
+	ID       column
+	Name     column
+	Provider column
+	Subject  column
+	IconURL  column
+	TeamID   column
+	IsAdmin  column
 }
 
 func (c userColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.Name, c.TeamID, c.IsAdmin,
+		c.ID, c.Name, c.Provider, c.Subject, c.IconURL, c.TeamID, c.IsAdmin,
 	}
 }
 
 type userIndexes struct {
-	Name    index
-	PRIMARY index
-	TeamID  index
+	Name     index
+	PRIMARY  index
+	Provider index
+	TeamID   index
 }
 
 func (i userIndexes) AsSlice() []index {
 	return []index{
-		i.Name, i.PRIMARY, i.TeamID,
+		i.Name, i.PRIMARY, i.Provider, i.TeamID,
 	}
 }
 
@@ -156,12 +210,13 @@ func (f userForeignKeys) AsSlice() []foreignKey {
 }
 
 type userUniques struct {
-	Name constraint
+	Name     constraint
+	Provider constraint
 }
 
 func (u userUniques) AsSlice() []constraint {
 	return []constraint{
-		u.Name,
+		u.Name, u.Provider,
 	}
 }
 

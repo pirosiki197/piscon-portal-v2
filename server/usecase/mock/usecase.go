@@ -899,6 +899,45 @@ func (c *MockUseCaseGetUsersCall) DoAndReturn(f func(context.Context) ([]domain.
 	return c
 }
 
+// Login mocks base method.
+func (m *MockUseCase) Login(ctx context.Context, identity domain.Identity) (domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Login", ctx, identity)
+	ret0, _ := ret[0].(domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Login indicates an expected call of Login.
+func (mr *MockUseCaseMockRecorder) Login(ctx, identity any) *MockUseCaseLoginCall {
+	mr.mock.ctrl.T.Helper()
+	call := mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockUseCase)(nil).Login), ctx, identity)
+	return &MockUseCaseLoginCall{Call: call}
+}
+
+// MockUseCaseLoginCall wrap *gomock.Call
+type MockUseCaseLoginCall struct {
+	*gomock.Call
+}
+
+// Return rewrite *gomock.Call.Return
+func (c *MockUseCaseLoginCall) Return(arg0 domain.User, arg1 error) *MockUseCaseLoginCall {
+	c.Call = c.Call.Return(arg0, arg1)
+	return c
+}
+
+// Do rewrite *gomock.Call.Do
+func (c *MockUseCaseLoginCall) Do(f func(context.Context, domain.Identity) (domain.User, error)) *MockUseCaseLoginCall {
+	c.Call = c.Call.Do(f)
+	return c
+}
+
+// DoAndReturn rewrite *gomock.Call.DoAndReturn
+func (c *MockUseCaseLoginCall) DoAndReturn(f func(context.Context, domain.Identity) (domain.User, error)) *MockUseCaseLoginCall {
+	c.Call = c.Call.DoAndReturn(f)
+	return c
+}
+
 // PutAdmins mocks base method.
 func (m *MockUseCase) PutAdmins(ctx context.Context, loginUserID uuid.UUID, userIDs []uuid.UUID) error {
 	m.ctrl.T.Helper()

@@ -1,35 +1,34 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
-	"net/url"
 
+	"github.com/jellydator/ttlcache/v3"
 	"github.com/labstack/echo/v4"
 	"github.com/traPtitech/piscon-portal-v2/server/handler/internal"
 	"github.com/traPtitech/piscon-portal-v2/server/repository"
-	"github.com/traPtitech/piscon-portal-v2/server/services/oauth2"
 	"github.com/traPtitech/piscon-portal-v2/server/usecase"
 )
 
 type Handler struct {
 	repo           repository.Repository
 	sessionManager SessionManager
-	oauth2Service  *oauth2.Service
+	authProviders  []AuthProvider
+	loginStates    *ttlcache.Cache[string, loginState]
 
 	useCase usecase.UseCase
 }
 
 type Config struct {
-	RootURL       string
 	Debug         bool
 	SessionSecret string
-	Oauth2        oauth2.Config
+	// AuthProviders は、ログインに使える認証手段である。この順でログインボタンに並ぶ。
+	AuthProviders []AuthProvider
 	// if SessionManager is nil, use default session manager
 	SessionManager SessionManager
 }
 
-func New(useCase usecase.UseCase, repo repository.Repository, config Config) (*Handler, error) {
+func New(useCase usecase.UseCase, repo repository.Repository, config Config) *Handler {
 	var sessionManager SessionManager
 	if config.SessionManager == nil {
 		sessionManager = internal.NewSessionManager(config.SessionSecret, config.Debug)
@@ -37,20 +36,13 @@ func New(useCase usecase.UseCase, repo repository.Repository, config Config) (*H
 		sessionManager = config.SessionManager
 	}
 
-	redirectURI, err := url.JoinPath(config.RootURL, "/api/oauth2/callback")
-	if err != nil {
-		return nil, fmt.Errorf("join callback URL: %w", err)
-	}
-	oauth2Service, err := oauth2.NewService(config.Oauth2, redirectURI)
-	if err != nil {
-		return nil, fmt.Errorf("create oauth2 service: %w", err)
-	}
 	return &Handler{
 		repo:           repo,
 		sessionManager: sessionManager,
-		oauth2Service:  oauth2Service,
+		authProviders:  config.AuthProviders,
+		loginStates:    newLoginStateStore(),
 		useCase:        useCase,
-	}, nil
+	}
 }
 
 func (h *Handler) SetupRoutes(e *echo.Echo) {
@@ -61,9 +53,16 @@ func (h *Handler) SetupRoutes(e *echo.Echo) {
 		return c.NoContent(http.StatusOK)
 	})
 
-	api.GET("/oauth2/code", h.GetOauth2Code)
-	api.GET("/oauth2/callback", h.Oauth2Callback)
-	api.POST("/oauth2/logout", h.Logout, h.AuthMiddleware())
+	auth := api.Group("/auth")
+	auth.GET("/providers", h.GetAuthProviders)
+	auth.GET("/:providerID/login", h.GetAuthLogin)
+	auth.GET("/:providerID/callback", h.GetAuthCallback)
+	auth.POST("/logout", h.Logout, h.AuthMiddleware())
+	for _, p := range h.authProviders {
+		if p, ok := p.(AuthorizePageProvider); ok {
+			e.GET(AuthorizePagePath(p.ID()), echo.WrapHandler(p.AuthorizePage()))
+		}
+	}
 
 	users := api.Group("/users", h.AuthMiddleware())
 	users.GET("", h.GetUsers)

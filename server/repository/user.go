@@ -10,9 +10,13 @@ import (
 type UserRepository interface {
 	// FindUser finds a user by id. If the user is not found, it returns [ErrNotFound].
 	FindUser(ctx context.Context, id uuid.UUID) (domain.User, error)
+	// FindUserByIdentity は、外部アカウントの認証手段と subject でユーザーを探す。見つからなければ [ErrNotFound] を返す。
+	FindUserByIdentity(ctx context.Context, provider, subject string) (domain.User, error)
 	// GetUsers returns all users.
 	GetUsers(ctx context.Context) ([]domain.User, error)
-	// CreateUser creates a user.
+	// CountUsers は、ユーザーの数を返す。
+	CountUsers(ctx context.Context) (int64, error)
+	// CreateUser は、ユーザーを作る。名前か、認証手段と subject の組が既存のユーザーと重なれば [ErrAlreadyExists] を返す。
 	CreateUser(ctx context.Context, user domain.User) error
 	// GetUsersByIDs returns users by ids.
 	// If the user is not found, it returns an empty slice.
