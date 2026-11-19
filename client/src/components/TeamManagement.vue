@@ -89,7 +89,7 @@ const removeGitHubId = (id: string) => {
       <div class="members-list">
         <div v-for="member in team.members" :key="member" class="member-container">
           <div class="member-info">
-            <UserAvatar :name="getUserById(member)?.name ?? ''" />
+            <UserAvatar :icon-url="getUserById(member)?.iconUrl" />
             <div>{{ getUserById(member)?.name }}</div>
           </div>
           <MainButton

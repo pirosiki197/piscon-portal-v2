@@ -26,6 +26,7 @@ const collapseStates = ref<Record<string, boolean>>({})
               v-for="member in team.members"
               :key="member"
               :name="getUserById(member)?.name ?? ''"
+              :icon-url="getUserById(member)?.iconUrl"
             />
           </div>
           <button

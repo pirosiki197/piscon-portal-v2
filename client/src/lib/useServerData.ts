@@ -14,6 +14,12 @@ export const useMe = () =>
     queryFn: () => api.GET('/users/me').then((r) => r.data),
   })
 
+export const useAuthProviders = () =>
+  useQuery({
+    queryKey: ['auth-providers'],
+    queryFn: () => api.GET('/auth/providers').then((r) => r.data),
+  })
+
 export const useTeamBenches = (teamId: string) =>
   useQuery({
     queryKey: ['team-benches', teamId],

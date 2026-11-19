@@ -36,7 +36,7 @@ const removeAdminHandler = (userId: string) => {
     <div class="admin-containers">
       <div v-for="admin in admins" :key="admin.id" class="admin-container">
         <div class="admin-info">
-          <UserAvatar :name="admin.name" />
+          <UserAvatar :icon-url="admin.iconUrl" />
           <div>{{ admin.name }}</div>
         </div>
         <MainButton

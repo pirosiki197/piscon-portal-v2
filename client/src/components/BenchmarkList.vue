@@ -29,7 +29,6 @@ const columns = computed(() => (isAdmin ? 7 : 6))
 
 const getInstanceName = (instanceId: string) =>
   instances.find((i) => i.id === instanceId)?.name ?? '?'
-const getUserName = (userId: string) => getUserById(userId)?.name ?? ''
 </script>
 
 <template>
@@ -80,7 +79,10 @@ const getUserName = (userId: string) => getUserById(userId)?.name ?? ''
           {{ getInstanceName(bench.instanceId) }}
         </div>
         <div class="bench-user list-user">
-          <UserChip :name="getUserName(bench.userId)" />
+          <UserChip
+            :name="getUserById(bench.userId)?.name ?? ''"
+            :icon-url="getUserById(bench.userId)?.iconUrl"
+          />
         </div>
         <div class="bench-status list-status">
           <BenchmarkStatusChip :status="bench.status" v-if="bench.status !== 'finished'" />

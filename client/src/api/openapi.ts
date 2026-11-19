@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-  '/oauth2/code': {
+  '/auth/providers': {
     parameters: {
       query?: never
       header?: never
@@ -12,10 +12,10 @@ export interface paths {
       cookie?: never
     }
     /**
-     * OAuth2認証コードの取得・traQの認可ページにリダイレクト
-     * @description OAuth2の認証に必要なCode Verifierを生成し、traQの認可ページにリダイレクトします。
+     * 有効な認証手段の一覧
+     * @description ログインに使える認証手段の一覧を返します。
      */
-    get: operations['getOauth2Code']
+    get: operations['getAuthProviders']
     put?: never
     post?: never
     delete?: never
@@ -24,7 +24,7 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/oauth2/callback': {
+  '/auth/{providerId}/login': {
     parameters: {
       query?: never
       header?: never
@@ -32,10 +32,10 @@ export interface paths {
       cookie?: never
     }
     /**
-     * traQからのリダイレクト
-     * @description traQ上での認証後にtraQから Authorization Codeがクエリパラメーターにつけられて、 リダイレクトされます。
+     * ログインを始める
+     * @description state を発行し、認証手段の認可ページにリダイレクトします。
      */
-    get: operations['getOauth2Callback']
+    get: operations['getAuthLogin']
     put?: never
     post?: never
     delete?: never
@@ -44,7 +44,27 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/oauth2/logout': {
+  '/auth/{providerId}/callback': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * 認証手段からのリダイレクト
+     * @description 認証手段での認証後に、認証手段からリダイレクトされます。クエリパラメーターは認証手段ごとに異なります。
+     */
+    get: operations['getAuthCallback']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/auth/logout': {
     parameters: {
       query?: never
       header?: never
@@ -57,7 +77,7 @@ export interface paths {
      * ログアウト
      * @description ログアウトし、セッションを削除します
      */
-    post: operations['postOauth2Logout']
+    post: operations['postAuthLogout']
     delete?: never
     options?: never
     head?: never
@@ -498,13 +518,27 @@ export interface components {
     /** @example 192.0.2.0 */
     IPAddress: string
     /**
+     * @description 認証手段のID
+     * @example traq
+     */
+    AuthProviderId: string
+    /** @description ログインに使える認証手段 */
+    AuthProvider: {
+      id: components['schemas']['AuthProviderId']
+      /**
+       * @description ログインボタンに表示する名前
+       * @example traQ
+       */
+      name: string
+    }
+    /**
      * Format: uuid
-     * @description traQのUUID
+     * @description ポータル内のユーザーID
      * @example 00000000-0000-0000-0000-000000000000
      */
     UserId: string
     /**
-     * @description traQのID
+     * @description ポータル内で一意なユーザー名
      * @example ikura-hamu
      */
     UserName: string
@@ -518,6 +552,12 @@ export interface components {
        * @example false
        */
       isAdmin: boolean
+      /**
+       * Format: uri
+       * @description アイコン画像のURL。ない場合は省略されます
+       * @example https://q.trap.jp/api/v3/public/icon/ikura-hamu
+       */
+      iconUrl?: string
     }
     /**
      * Format: uuid
@@ -759,6 +799,8 @@ export interface components {
     }
   }
   parameters: {
+    /** @description 認証手段のID */
+    authProviderIdInPath: components['schemas']['AuthProviderId']
     /** @description チームID */
     teamId: components['schemas']['TeamId']
     /** @description ベンチマークID */
@@ -804,7 +846,7 @@ export interface components {
 }
 export type $defs = Record<string, never>
 export interface operations {
-  getOauth2Code: {
+  getAuthProviders: {
     parameters: {
       query?: never
       header?: never
@@ -813,30 +855,30 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description traQの認可ページにリダイレクトします。 */
-      303: {
+      /** @description 有効な認証手段の一覧 */
+      200: {
         headers: {
-          Location?: string
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          'application/json': components['schemas']['AuthProvider'][]
+        }
       }
-      500: components['responses']['InternalServerError']
     }
   }
-  getOauth2Callback: {
+  getAuthLogin: {
     parameters: {
-      query: {
-        /** @description traQからのAuthorization Code */
-        code: string
-      }
+      query?: never
       header?: never
-      path?: never
+      path: {
+        /** @description 認証手段のID */
+        providerId: components['parameters']['authProviderIdInPath']
+      }
       cookie?: never
     }
     requestBody?: never
     responses: {
-      /** @description 認証に成功し、トップページにリダイレクトします。 */
+      /** @description 認証手段の認可ページにリダイレクトします。 */
       303: {
         headers: {
           Location?: string
@@ -844,22 +886,46 @@ export interface operations {
         }
         content?: never
       }
-      /** @description セッションやAuthorization Codeに誤りがあり、認証に失敗しました */
+      404: components['responses']['NotFound']
+      500: components['responses']['InternalServerError']
+    }
+  }
+  getAuthCallback: {
+    parameters: {
+      query: {
+        state: string
+      }
+      header?: never
+      path: {
+        /** @description 認証手段のID */
+        providerId: components['parameters']['authProviderIdInPath']
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description ログインに成功し、トップページにリダイレクトします。 */
+      303: {
+        headers: {
+          Location?: string
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description state の誤り、認証の失敗、ユーザー名の重複のいずれかで、ログインに失敗しました。 */
       400: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            /** @example 認証に失敗しました。 */
-            message?: string
-          }
+          'text/plain': string
         }
       }
+      404: components['responses']['NotFound']
       500: components['responses']['InternalServerError']
     }
   }
-  postOauth2Logout: {
+  postAuthLogout: {
     parameters: {
       query?: never
       header?: never
@@ -874,18 +940,6 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
-      }
-      /** @description セッションに誤りがあり、認証に失敗しました */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': {
-            /** @example 誤りの内容 */
-            message?: string
-          }
-        }
       }
       401: components['responses']['Unauthorized']
       500: components['responses']['InternalServerError']
