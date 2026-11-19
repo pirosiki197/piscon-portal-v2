@@ -36,6 +36,8 @@ const (
 	keySSHPublicKeys = "user.piscon.ssh-public-keys"
 	// keyDeleting は、削除を依頼した時刻（RFC 3339）である。ゲストには関係しない。
 	keyDeleting = "user.piscon.deleting"
+	// keyLastPowerState は、Incus がコンテナを起動・停止するたびに記録する状態である。一度も起動していなければない。
+	keyLastPowerState = "volatile.last_state.power"
 )
 
 // user-data が準備の結果を知らせる印のファイル。
@@ -215,6 +217,12 @@ func (c *Client) readServer(environment, server string) (serverView, error) {
 		}
 		v.DeletingSince = &t
 		// 消えかけのコンテナのファイルは読めないことがあり、読んでも状態は変わらない。
+		return v, nil
+	}
+
+	// 一度も起動していないコンテナには、まだ印がない。
+	// イメージの展開中にファイルを読むと、展開が終わるまで応答が返らない。
+	if inst.Config[keyLastPowerState] == "" {
 		return v, nil
 	}
 
